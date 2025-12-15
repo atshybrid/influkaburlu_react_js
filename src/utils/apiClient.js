@@ -70,7 +70,12 @@ export function saveTokens({ token, refreshToken, expiresAt, refreshExpiresAt, u
   localStorage.setItem('auth.refreshToken', refreshToken || '');
   if (expiresAt) localStorage.setItem('auth.expiresAt', expiresAt);
   if (refreshExpiresAt) localStorage.setItem('auth.refreshExpiresAt', refreshExpiresAt);
-  if (user) localStorage.setItem('auth.user', JSON.stringify(user));
+  if (user) {
+    localStorage.setItem('auth.user', JSON.stringify(user));
+  } else {
+    // Clear any stale cached user from a previous session
+    localStorage.removeItem('auth.user');
+  }
 }
 
 export function getTokens() {
