@@ -16,6 +16,7 @@ import DashboardAdvertiser from './pages/DashboardAdvertiser';
 import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import { getRoleFromToken, normalizeRole } from './utils/apiClient';
 import './styles.css';
 
 function App(){
@@ -53,8 +54,11 @@ export default App;
 function RequireAuth({ children, role }){
 	const token = localStorage.getItem('auth.token');
 	const user = safeParse(localStorage.getItem('auth.user'));
-	const okRole = role ? user?.role === role : true;
-	if (!token || !okRole) {
+	const userRole = normalizeRole(user?.role);
+	const tokenRole = normalizeRole(getRoleFromToken(token));
+	const effectiveRole = userRole || tokenRole;
+	const okRole = role ? effectiveRole === role : true;
+	if (!token || (role && !okRole)) {
 		const next = window.location.pathname + window.location.search;
 		window.location.replace(`/login?next=${encodeURIComponent(next)}`);
 		return null;

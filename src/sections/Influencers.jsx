@@ -62,8 +62,8 @@ export default function Influencers() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 ring-1 ring-orange-200">CREATORS</div>
-          <h2 className="mt-2 text-3xl md:text-4xl font-bold">Featured creators</h2>
-          <p className="mt-2 text-gray-600">Watch recent creator videos right in the card.</p>
+          <h2 className="mt-2 text-3xl md:text-4xl font-bold">Brand-Ready Creators</h2>
+          <p className="mt-2 text-gray-600">Watch their latest ad videos</p>
         </div>
         <Link
           to="/influencers"

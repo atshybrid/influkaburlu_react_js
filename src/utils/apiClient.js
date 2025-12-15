@@ -61,20 +61,78 @@ export const apiClient = {
         throw new Error(`${statusText} (${res.status})`);
       }
     }
-    return res.json();
+
+    // Some endpoints (notably DELETE) may return 204 No Content
+    if (res.status === 204) return null;
+
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
+      return res.json();
+    }
+    // If server responds with empty body, avoid parsing errors
+    const text = await res.text().catch(() => '');
+    return text || null;
   },
 };
 
+export function normalizeRole(role) {
+  const r = (role || '').toString().trim().toLowerCase();
+  if (!r) return '';
+  // Keep frontend route roles consistent
+  if (r === 'brand') return 'advertiser';
+  if (r === 'business') return 'advertiser';
+  if (r === 'creator') return 'influencer';
+  return r;
+}
+
+export function parseJwtPayload(token) {
+  try {
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const json = atob(padded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+export function getRoleFromToken(token) {
+  const payload = parseJwtPayload(token);
+  const direct = payload?.role || payload?.user?.role || payload?.claims?.role || payload?.profile?.role;
+  return normalizeRole(direct);
+}
+
+export function clearSession() {
+  // Auth keys
+  localStorage.removeItem('auth.token');
+  localStorage.removeItem('auth.refreshToken');
+  localStorage.removeItem('auth.expiresAt');
+  localStorage.removeItem('auth.refreshExpiresAt');
+  localStorage.removeItem('auth.user');
+  // Legacy key used by older flows
+  localStorage.removeItem('kab_token');
+}
+
 export function saveTokens({ token, refreshToken, expiresAt, refreshExpiresAt, user }) {
-  localStorage.setItem('auth.token', token || '');
-  localStorage.setItem('auth.refreshToken', refreshToken || '');
+  // Start from a clean slate to avoid cross-session leakage
+  clearSession();
+
+  if (token) localStorage.setItem('auth.token', token);
+  if (refreshToken) localStorage.setItem('auth.refreshToken', refreshToken);
   if (expiresAt) localStorage.setItem('auth.expiresAt', expiresAt);
   if (refreshExpiresAt) localStorage.setItem('auth.refreshExpiresAt', refreshExpiresAt);
-  if (user) {
-    localStorage.setItem('auth.user', JSON.stringify(user));
-  } else {
-    // Clear any stale cached user from a previous session
-    localStorage.removeItem('auth.user');
+
+  const normalizedRole = normalizeRole(user?.role) || getRoleFromToken(token);
+  if (user && typeof user === 'object') {
+    const normalizedUser = { ...user, role: normalizedRole || user.role };
+    localStorage.setItem('auth.user', JSON.stringify(normalizedUser));
+  } else if (normalizedRole) {
+    // Store minimal user so role-gated routes work even if backend omits user
+    localStorage.setItem('auth.user', JSON.stringify({ role: normalizedRole }));
   }
 }
 
@@ -100,6 +158,8 @@ export async function refreshToken(refreshToken) {
 
 export async function logout() {
   const tokens = getTokens();
+  // Clear immediately so UI never shows stale data
+  clearSession();
   try {
     if (tokens?.refreshToken) {
       await fetch(`${API_BASE}/auth/logout`, {
@@ -108,13 +168,7 @@ export async function logout() {
         body: JSON.stringify({ refreshToken: tokens.refreshToken }),
       });
     }
-  } finally {
-    localStorage.removeItem('auth.token');
-    localStorage.removeItem('auth.refreshToken');
-    localStorage.removeItem('auth.expiresAt');
-    localStorage.removeItem('auth.refreshExpiresAt');
-    localStorage.removeItem('auth.user');
-  }
+  } finally {}
 }
 
 function safeParse(str) {

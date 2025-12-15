@@ -19,15 +19,9 @@ export default function Navbar() {
     if (loggingOut) return; // prevent double clicks
     setLoggingOut(true);
     try {
-      // Clear tokens first to immediately update UI
-      localStorage.removeItem('auth.token');
-      localStorage.removeItem('auth.refreshToken');
-      localStorage.removeItem('auth.expiresAt');
-      localStorage.removeItem('auth.refreshExpiresAt');
-      localStorage.removeItem('auth.user');
       setAuthed(false);
       setRole('');
-      // Fire-and-forget API call; do not block redirect
+      // Fire-and-forget; apiClient.logout clears session immediately
       logout().catch(() => {});
       // Use navigate then hard replace to avoid back to authed state
       navigate('/');

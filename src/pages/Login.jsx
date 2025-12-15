@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
-import axios from 'axios';
-import { apiClient } from '../utils/apiClient';
+import { apiClient, getRoleFromToken, normalizeRole, saveTokens } from '../utils/apiClient';
 import { Link, useSearchParams } from 'react-router-dom';
 import GoogleAuthButton from '../components/GoogleAuthButton';
 
@@ -42,13 +41,17 @@ export default function Login(){
 					method: 'POST',
 					body: JSON.stringify({ phone, mpin }),
 				});
-			localStorage.setItem('auth.token', data.token);
-			localStorage.setItem('auth.refreshToken', data.refreshToken);
-			if (data.expiresAt) localStorage.setItem('auth.expiresAt', data.expiresAt);
-			if (data.refreshExpiresAt) localStorage.setItem('auth.refreshExpiresAt', data.refreshExpiresAt);
-			if (data.user) localStorage.setItem('auth.user', JSON.stringify(data.user));
-			const role = data?.user?.role;
-			const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
+
+			saveTokens({
+				token: data?.token,
+				refreshToken: data?.refreshToken,
+				expiresAt: data?.expiresAt,
+				refreshExpiresAt: data?.refreshExpiresAt,
+				user: data?.user,
+			});
+
+			const resolvedRole = normalizeRole(data?.user?.role) || getRoleFromToken(data?.token);
+			const redirect = next || (resolvedRole === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
 			window.location.href = redirect;
 		} catch (e) {
 			console.error('Login error:', e);
@@ -116,9 +119,9 @@ export default function Login(){
 						<div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white ring-1 ring-gray-200 text-xs text-gray-700">Secure login</div>
 						<h1 className="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">Sign in to Influ Kaburlu</h1>
 						<p className="mt-2 text-sm text-gray-600">Access your campaigns, collaborations, and insights all in one place.</p>
-						<div className="mt-6 flex items-center gap-3 text-sm">
-							<Link to="/get-started" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white ring-1 ring-gray-200 text-gray-800">New? Get Started</Link>
-							<Link to="/brands" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white ring-1 ring-gray-200 text-gray-800">Explore Brands</Link>
+						<div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
+							<Link to="/get-started?role=influencer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white ring-1 ring-gray-200 text-gray-800">Create Creator account</Link>
+							<Link to="/register/brand" className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white ring-1 ring-gray-200 text-gray-800">Create Brand account</Link>
 						</div>
 					</div>
 					<div className="mx-auto w-full max-w-md">
@@ -132,8 +135,8 @@ export default function Login(){
 								<form className="mt-4 space-y-4" onSubmit={login}>
 									<label className="block text-sm text-gray-700">Mobile Number</label>
 									<div className="flex items-center gap-2">
-										<div className="px-3 py-2 rounded-md bg-gray-100 text-sm text-gray-700">+91</div>
-										<input type="tel" inputMode="numeric" maxLength={10} required placeholder="88888 88888" value={phone} className="flex-1 rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3 py-2 tracking-wider" onChange={e=>setPhone(e.target.value.replace(/[^0-9]/g, '').slice(0,10))} />
+										<div className="h-12 px-3 rounded-md bg-gray-100 text-sm text-gray-700 inline-flex items-center">+91</div>
+										<input type="tel" inputMode="numeric" maxLength={10} required placeholder="88888 88888" value={phone} className="flex-1 h-12 rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3 tracking-wider" onChange={e=>setPhone(e.target.value.replace(/[^0-9]/g, '').slice(0,10))} />
 									</div>
 
 									<label className="block text-sm text-gray-700">Enter 6-digit MPIN</label>
@@ -175,31 +178,35 @@ export default function Login(){
 										</div>
 									</div>
 								)}
-								<div className="mt-4 grid grid-cols-2 gap-2">
-									<GoogleAuthButton
-										role="influencer"
-										label="Continue with Google (Influencer)"
-										onSuccess={(auth) => {
-											const role = auth?.user?.role || 'influencer';
-											const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
-											window.location.href = redirect;
-										}}
-										onError={(e) => {
-											setError(e?.message || 'Google sign-in failed.');
-										}}
-									/>
-									<GoogleAuthButton
-										role="brand"
-										label="Continue with Google (Brand)"
-										onSuccess={(auth) => {
-											const role = auth?.user?.role || 'brand';
-											const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
-											window.location.href = redirect;
-										}}
-										onError={(e) => {
-											setError(e?.message || 'Google sign-in failed.');
-										}}
-									/>
+								<div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+									<div>
+										<div className="mb-1 text-xs text-gray-700">Continue with Google (Creator)</div>
+										<GoogleAuthButton
+											role="influencer"
+											onSuccess={(auth) => {
+												const role = auth?.user?.role || 'influencer';
+												const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
+												window.location.href = redirect;
+											}}
+											onError={(e) => {
+												setError(e?.message || 'Google sign-in failed.');
+											}}
+										/>
+									</div>
+									<div>
+										<div className="mb-1 text-xs text-gray-700">Continue with Google (Brand)</div>
+										<GoogleAuthButton
+											role="brand"
+											onSuccess={(auth) => {
+												const role = auth?.user?.role || 'brand';
+												const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
+												window.location.href = redirect;
+											}}
+											onError={(e) => {
+												setError(e?.message || 'Google sign-in failed.');
+											}}
+										/>
+									</div>
 								</div>
 							</div>
 						</div>

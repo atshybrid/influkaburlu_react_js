@@ -2,6 +2,10 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 export default function Hero() {
+  const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('auth.token');
+  const brandCtaTo = isAuthed ? '/ads' : '/get-started?role=brand';
+  const creatorCtaTo = isAuthed ? '/profile-builder' : '/get-started?role=influencer';
+
   return (
     <section className="relative overflow-hidden">
       {/* Real-world ad + influencer collage with motion */}
@@ -29,8 +33,8 @@ export default function Hero() {
                 Find creators your audience already loves. Craft native stories, launch fast, and watch real conversions roll in — no fluff, just impact.
               </motion.p>
             <div className="mt-8 flex items-center gap-3">
-              <a href="/ads" className="px-5 py-3 rounded-md text-white font-medium bg-orange-600 hover:bg-orange-700">For Brands</a>
-              <a href="/profile-builder" className="px-5 py-3 rounded-md font-medium text-orange-700 border border-orange-200 bg-white hover:bg-orange-50">For Creators</a>
+                <Link to={brandCtaTo} className="px-5 py-3 rounded-md text-white font-medium bg-orange-600 hover:bg-orange-700">For Brands</Link>
+                <Link to={creatorCtaTo} className="px-5 py-3 rounded-md font-medium text-orange-700 border border-orange-200 bg-white hover:bg-orange-50">For Creators</Link>
             </div>
             <div className="mt-6 flex flex-wrap gap-2 text-sm text-gray-600">
               {['IG Reels','YouTube Shorts','TikTok','X Posts','Stories'].map(t=> (
