@@ -1,7 +1,8 @@
 let API_BASE = import.meta.env.VITE_API_URL || 'https://influapi.kaburlumedia.com/api';
-// Normalize API base to ensure it ends with /api
-if (API_BASE && !API_BASE.endsWith('/api')) {
-  API_BASE = API_BASE.replace(/\/$/, '') + '/api';
+// Normalize API base to ensure it ends with /api (tolerate trailing slashes)
+if (API_BASE) {
+  const trimmed = String(API_BASE).trim().replace(/\/+$/, '');
+  API_BASE = trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
 }
 
 // Simple API client with token refresh support
