@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import axios from 'axios';
 import { apiClient } from '../utils/apiClient';
 import { Link, useSearchParams } from 'react-router-dom';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 
 export default function Login(){
 	const [phone, setPhone] = useState('');
@@ -175,8 +176,30 @@ export default function Login(){
 									</div>
 								)}
 								<div className="mt-4 grid grid-cols-2 gap-2">
-									<button className="w-full px-3 py-2 rounded-md text-sm font-medium text-gray-800 bg-gray-100">Continue with Google</button>
-									<button className="w-full px-3 py-2 rounded-md text-sm font-medium text-gray-800 bg-gray-100">Continue with Apple</button>
+									<GoogleAuthButton
+										role="influencer"
+										label="Continue with Google (Influencer)"
+										onSuccess={(auth) => {
+											const role = auth?.user?.role || 'influencer';
+											const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
+											window.location.href = redirect;
+										}}
+										onError={(e) => {
+											setError(e?.message || 'Google sign-in failed.');
+										}}
+									/>
+									<GoogleAuthButton
+										role="brand"
+										label="Continue with Google (Brand)"
+										onSuccess={(auth) => {
+											const role = auth?.user?.role || 'brand';
+											const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
+											window.location.href = redirect;
+										}}
+										onError={(e) => {
+											setError(e?.message || 'Google sign-in failed.');
+										}}
+									/>
 								</div>
 							</div>
 						</div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 
 export default function BrandRegister(){
   const [form, setForm] = useState({
@@ -44,6 +45,24 @@ export default function BrandRegister(){
         <div className="mt-8 mx-auto w-full max-w-2xl">
           <div className="rounded-2xl p-[1px] bg-gradient-to-br from-orange-200 to-pink-200">
             <form className="rounded-2xl bg-white p-6" onSubmit={register}>
+              <div className="grid sm:grid-cols-2 gap-2 mb-4">
+                <GoogleAuthButton
+                  role="brand"
+                  label="Continue with Google"
+                  onSuccess={() => {
+                    window.location.href = '/dashboard-advertiser';
+                  }}
+                  onError={(e) => {
+                    setError(e?.message || 'Google sign-in failed.');
+                  }}
+                />
+                <a
+                  href="/login"
+                  className="w-full px-3 py-2 rounded-md text-sm font-medium text-gray-800 bg-gray-100 inline-flex items-center justify-center"
+                >
+                  Sign in with MPIN
+                </a>
+              </div>
               {error && <div className="mb-3 text-xs text-red-600">{error}</div>}
               {success && <div className="mb-3 text-xs text-green-700">{success}</div>}
               <div className="grid md:grid-cols-2 gap-4">
