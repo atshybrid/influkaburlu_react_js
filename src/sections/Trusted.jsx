@@ -34,12 +34,12 @@ export default function Trusted() {
         // Fallback data if file not found
         setData({
           logos: [
-            { src: "/assets/logos/alpha.svg", alt: "Alpha" },
-            { src: "/assets/logos/beta.svg", alt: "Beta" },
-            { src: "/assets/logos/gamma.svg", alt: "Gamma" },
-            { src: "/assets/logos/delta.svg", alt: "Delta" },
-            { src: "/assets/logos/epsilon.svg", alt: "Epsilon" },
-            { src: "/assets/logos/zeta.svg", alt: "Zeta" },
+            { src: "/assets/brand-logo.png", alt: "Alpha" },
+            { src: "/assets/brand-logo.png", alt: "Beta" },
+            { src: "/assets/brand-logo.png", alt: "Gamma" },
+            { src: "/assets/brand-logo.png", alt: "Delta" },
+            { src: "/assets/brand-logo.png", alt: "Epsilon" },
+            { src: "/assets/brand-logo.png", alt: "Zeta" },
           ],
           highlights: [
             { k: "Avg ROAS lift", v: "+42%" },
@@ -94,7 +94,7 @@ export default function Trusted() {
             <div key={cs.brand+cs.title} className="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm overflow-hidden">
               <div className="px-5 pt-5">
                 <div className="flex items-center gap-2">
-                  <ImgWithFallback src={`/assets/logos/${(cs.brand||'').toLowerCase()}.svg`} fallback="/assets/brand-logo.png" alt={cs.brand} className="h-5 w-5 object-contain" />
+                  <ImgWithFallback src="/assets/brand-logo.png" fallback="/assets/brand-logo.png" alt={cs.brand} className="h-5 w-5 object-contain" />
                   <span className="text-sm text-gray-600">{cs.brand}</span>
                 </div>
                 <h3 className="mt-2 text-lg font-semibold text-gray-900">{cs.title}</h3>

@@ -24,34 +24,34 @@ const testimonials = [
     q: 'Kaburlu helped us find perfect creators in days, not weeks.',
     a: 'Growth Lead',
     company: 'Orbit',
-    avatar: '/assets/people/orbit.jpg',
-    logo: '/assets/logos/orbit.svg',
+    avatar: '/assets/influencer-1.jpg',
+    logo: '/assets/brand-logo.png',
   },
   {
     q: 'Analytics gave us confidence to scale our spend.',
     a: 'CMO',
     company: 'Acme',
-    avatar: '/assets/people/acme.jpg',
-    logo: '/assets/logos/acme.svg',
+    avatar: '/assets/influencer-2.jpg',
+    logo: '/assets/brand-logo.png',
   },
   {
     q: 'Smooth workflow from brief to payment. Love it.',
     a: 'Agency Partner',
     company: 'North',
-    avatar: '/assets/people/agency.jpg',
-    logo: '/assets/logos/north.svg',
+    avatar: '/assets/influencer-1.jpg',
+    logo: '/assets/brand-logo.png',
   },
   {
     q: 'Creator fits are consistently on point.',
     a: 'Brand Manager',
     company: 'Pulse',
-    avatar: '/assets/people/pulse.jpg',
-    logo: '/assets/logos/pulse.svg',
+    avatar: '/assets/influencer-2.jpg',
+    logo: '/assets/brand-logo.png',
   },
 ];
 
 const fallbacks = {
-  avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=600&auto=format&fit=crop',
+  avatar: '/assets/brand-logo.png',
   logo: '/assets/brand-logo.png',
 };
 
