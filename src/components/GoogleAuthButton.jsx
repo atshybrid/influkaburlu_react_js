@@ -25,7 +25,7 @@ export default function GoogleAuthButton({
   onError,
 }) {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const containerRef = useRef(null);
+  const buttonRef = useRef(null);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -75,6 +75,17 @@ export default function GoogleAuthButton({
         use_fedcm_for_prompt: true,
       });
 
+      if (buttonRef.current) {
+        // Render the official Google button. This works even when One Tap is skipped.
+        google.accounts.id.renderButton(buttonRef.current, {
+          theme: 'outline',
+          size: 'large',
+          width: 360,
+          text: 'continue_with',
+          shape: 'rectangular',
+        });
+      }
+
       setReady(true);
       return true;
     } catch (e) {
@@ -107,57 +118,26 @@ export default function GoogleAuthButton({
     return () => window.clearInterval(timer);
   }, [clientId, role, onError, onSuccess]);
 
-  const startGoogle = () => {
-    const google = window?.google;
-    if (!google?.accounts?.id) {
-      onError?.(new Error('Google Identity Services is not available yet.'));
-      return;
-    }
-
-    try {
-      initIfPossible();
-      google.accounts.id.prompt((notification) => {
-        try {
-          if (notification?.isNotDisplayed?.()) {
-            const reason = notification?.getNotDisplayedReason?.() || 'unknown';
-            onError?.(
-              new Error(
-                `Google popup was not displayed (${reason}). Common fixes: add this origin in Google Cloud OAuth "Authorized JavaScript origins" (e.g. ${window.location.origin}), allow third-party cookies, disable ad-blockers.`
-              )
-            );
-          } else if (notification?.isSkippedMoment?.()) {
-            const reason = notification?.getSkippedReason?.() || 'unknown';
-            onError?.(
-              new Error(
-                `Google login was skipped (${reason}). Try again in an Incognito window, or clear site data for ${window.location.origin}.`
-              )
-            );
-          }
-        } catch {
-          // ignore
-        }
-      });
-    } catch (e) {
-      onError?.(e);
-    }
-  };
-
   return (
-    <div ref={containerRef} className="w-full">
-      <button
-        type="button"
-        disabled={!clientId || loading}
-        onClick={startGoogle}
-        className={
-          className ||
-          'w-full px-3 py-2 rounded-md text-sm font-medium text-gray-800 bg-gray-100 disabled:opacity-60'
-        }
-      >
-        {loading ? 'Connecting…' : buttonText}
-      </button>
+    <div className="w-full">
+      {label && <div className="mb-2 text-xs text-gray-700">{label}</div>}
+      <div
+        ref={buttonRef}
+        className={className || 'w-full [&_div]:w-full'}
+      />
       {!clientId && (
         <div className="mt-2 text-xs text-gray-500">
           Google login is not configured (missing VITE_GOOGLE_CLIENT_ID).
+        </div>
+      )}
+      {clientId && !ready && (
+        <div className="mt-2 text-xs text-gray-500">
+          Loading Google login…
+        </div>
+      )}
+      {loading && (
+        <div className="mt-2 text-xs text-gray-500">
+          Connecting…
         </div>
       )}
     </div>
