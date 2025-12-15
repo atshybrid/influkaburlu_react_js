@@ -8,6 +8,7 @@ export default function BrandRegister(){
     website: '',
     contactName: '',
     email: '',
+    phone: '',
     logoUrl: '',
     monthlyBudget: '',
     objective: 'Awareness',
@@ -49,6 +50,13 @@ export default function BrandRegister(){
                 <GoogleAuthButton
                   role="brand"
                   label="Continue with Google"
+                  extraPayload={() => {
+                    const phone = (form.phone || '').replace(/[^0-9]/g, '').slice(0, 10);
+                    if (!phone || phone.length !== 10) {
+                      throw new Error('Phone is required for Google brand signup (10 digits).');
+                    }
+                    return { phone };
+                  }}
                   onSuccess={() => {
                     window.location.href = '/dashboard-advertiser';
                   }}
@@ -77,6 +85,9 @@ export default function BrandRegister(){
                 </label>
                 <label className="text-sm text-gray-700">Email
                   <input required type="email" className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" placeholder="you@brand.com" value={form.email} onChange={e=>setForm({ ...form, email: e.target.value })} />
+                </label>
+                <label className="text-sm text-gray-700">Phone (required for Google signup)
+                  <input required type="tel" inputMode="numeric" maxLength={10} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" placeholder="8282868389" value={form.phone} onChange={e=>setForm({ ...form, phone: e.target.value.replace(/[^0-9]/g, '').slice(0,10) })} />
                 </label>
                 <label className="text-sm text-gray-700">Logo URL
                   <input className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" placeholder="https://…/logo.png" value={form.logoUrl} onChange={e=>setForm({ ...form, logoUrl: e.target.value })} />

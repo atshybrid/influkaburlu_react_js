@@ -20,6 +20,7 @@ export default function GoogleAuthButton({
   role, // 'influencer' | 'brand'
   label,
   className,
+  extraPayload,
   onSuccess,
   onError,
 }) {
@@ -47,7 +48,8 @@ export default function GoogleAuthButton({
 
           setLoading(true);
           try {
-            const payload = role ? { idToken, role } : { idToken };
+            const extras = typeof extraPayload === 'function' ? extraPayload() : (extraPayload || {});
+            const payload = role ? { idToken, role, ...extras } : { idToken, ...extras };
             const data = await apiClient.request('/auth/google', {
               method: 'POST',
               body: JSON.stringify(payload),
