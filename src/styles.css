@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto; }
+h1, .font-serif { font-family: Georgia, 'Times New Roman', serif; }
+
+@layer utilities {
+	@keyframes float {
+		0%,100% { transform: translateY(0px); }
+		50% { transform: translateY(-10px); }
+	}
+	.animate-float { animation: float 6s ease-in-out infinite; }
+
+	@keyframes blob {
+		0% { transform: translate(0px, 0px) scale(1); }
+		33% { transform: translate(10px, -20px) scale(1.05); }
+		66% { transform: translate(-10px, 20px) scale(0.95); }
+		100% { transform: translate(0px, 0px) scale(1); }
+	}
+	.animate-blob { animation: blob 14s ease-in-out infinite; }
+
+	@keyframes marquee {
+		from { transform: translateX(0); }
+		to { transform: translateX(-50%); }
+	}
+	.animate-marquee { animation: marquee 25s linear infinite; }
+
+	.gradient-border {
+		position: relative;
+		border-radius: 1rem;
+	}
+	.gradient-border::before {
+		content: "";
+		position: absolute; inset: -1px;
+		border-radius: inherit;
+		background: linear-gradient(90deg, #fb923c, #ec4899);
+		-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+		-webkit-mask-composite: xor; mask-composite: exclude;
+		padding: 1px;
+	}
+
+	.magnetic-btn {
+		position: relative;
+		transition: transform 200ms ease, box-shadow 200ms ease;
+	}
+	.magnetic-btn:hover { box-shadow: 0 10px 24px rgba(236,72,153,0.25); }
+	.section-sep {
+		height: 1px;
+		background: linear-gradient(90deg, transparent, #fca5a5, #fb923c, #ec4899, transparent);
+		opacity: 0.6;
+	}
+}

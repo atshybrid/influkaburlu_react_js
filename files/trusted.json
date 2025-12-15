@@ -1,0 +1,20 @@
+{
+  "logos": [
+    { "src": "/assets/logos/alpha.svg", "alt": "Alpha" },
+    { "src": "/assets/logos/beta.svg", "alt": "Beta" },
+    { "src": "/assets/logos/gamma.svg", "alt": "Gamma" },
+    { "src": "/assets/logos/delta.svg", "alt": "Delta" },
+    { "src": "/assets/logos/epsilon.svg", "alt": "Epsilon" },
+    { "src": "/assets/logos/zeta.svg", "alt": "Zeta" }
+  ],
+  "highlights": [
+    { "k": "Avg ROAS lift", "v": "+42%" },
+    { "k": "Briefs to posts", "v": "2.3× faster" },
+    { "k": "Creator acceptance", "v": "+28%" }
+  ],
+  "cases": [
+    { "brand": "Alpha", "title": "3.9x ROAS on Reels", "metric": "+290% conv.", "platform": "Instagram" },
+    { "brand": "Beta", "title": "2.4x ROAS on Shorts", "metric": "+180% CTR", "platform": "YouTube" },
+    { "brand": "Gamma", "title": "3.1x ROAS on Stories", "metric": "+120% AOV", "platform": "Instagram" }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "kaburlu-frontend-v2",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "1.4.0",
+    "browser-image-compression": "^2.0.2",
+    "framer-motion": "^10.16.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.14.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.2.0",
+    "autoprefixer": "10.4.14",
+    "postcss": "8.4.24",
+    "tailwindcss": "^3.4.0",
+    "vite": "5.3.0"
+  }
+}

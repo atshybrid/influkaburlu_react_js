@@ -1,0 +1,67 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Landing from './pages/Landing';
+import Home from './pages/Home';
+import Ads from './pages/Ads';
+import ProfileBuilder from './pages/ProfileBuilderAdvanced';
+import Login from './pages/Login';
+import GetStarted from './pages/GetStarted';
+import Brands from './pages/Brands';
+import BrandRegister from './pages/BrandRegister';
+import InfluencerProfile from './pages/InfluencerProfile';
+import InfluencersList from './pages/InfluencersList';
+import DashboardInfluencer from './pages/DashboardInfluencer';
+import DashboardAdvertiser from './pages/DashboardAdvertiser';
+import Admin from './pages/Admin';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import './styles.css';
+
+function App(){
+	return (
+		<BrowserRouter>
+			<Navbar />
+			<div className="max-w-6xl mx-auto px-6">
+				<Routes>
+					<Route path="/" element={<Landing/>} />
+					<Route path="/home" element={<Home/>} />
+					<Route path="/ads" element={<Ads/>} />
+					<Route path="/profile-builder" element={<ProfileBuilder/>} />
+					<Route path="/login" element={<Login/>} />
+                    <Route path="/get-started" element={<GetStarted/>} />
+					<Route path="/brands" element={<Brands/>} />
+                    <Route path="/register/brand" element={<BrandRegister/>} />
+					<Route path="/influencers" element={<InfluencersList/>} />
+					<Route path="/influencer/:slug" element={<InfluencerProfile/>} />
+					<Route path="/dashboard/influencer" element={<RequireAuth role="influencer"><DashboardInfluencer/></RequireAuth>} />
+					<Route path="/dashboard/advertiser" element={<RequireAuth role="advertiser"><DashboardAdvertiser/></RequireAuth>} />
+					<Route path="/dashboard-influencer" element={<RequireAuth role="influencer"><DashboardInfluencer/></RequireAuth>} />
+					<Route path="/dashboard-advertiser" element={<RequireAuth role="advertiser"><DashboardAdvertiser/></RequireAuth>} />
+					<Route path="/admin" element={<Admin/>} />
+				</Routes>
+			</div>
+			<Footer />
+		</BrowserRouter>
+	)
+}
+
+createRoot(document.getElementById('root')).render(<App />);
+
+export default App;
+
+function RequireAuth({ children, role }){
+	const token = localStorage.getItem('auth.token');
+	const user = safeParse(localStorage.getItem('auth.user'));
+	const okRole = role ? user?.role === role : true;
+	if (!token || !okRole) {
+		const next = window.location.pathname + window.location.search;
+		window.location.replace(`/login?next=${encodeURIComponent(next)}`);
+		return null;
+	}
+	return children;
+}
+
+function safeParse(str){
+	try { return str ? JSON.parse(str) : null; } catch { return null; }
+}

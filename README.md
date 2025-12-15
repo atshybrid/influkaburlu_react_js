@@ -1,2 +1,1 @@
-# influkaburlu_react_js
-influ kaburlu React Js
+# Kaburlu Frontend v2 (Vite + React + Tailwind)\n\nQuick start: npm install, copy .env.example to .env, npm run dev
