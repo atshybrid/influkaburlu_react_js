@@ -28,6 +28,59 @@ export default function GoogleAuthButton({
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const initIfPossible = () => {
+    if (!clientId) return false;
+    const google = window?.google;
+    if (!google?.accounts?.id) return false;
+    if (ready) return true;
+
+    try {
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (resp) => {
+          const idToken = resp?.credential;
+          if (!idToken) {
+            const err = new Error('Google sign-in did not return an ID token.');
+            onError?.(err);
+            return;
+          }
+
+          setLoading(true);
+          try {
+            const payload = role ? { idToken, role } : { idToken };
+            const data = await apiClient.request('/auth/google', {
+              method: 'POST',
+              body: JSON.stringify(payload),
+              skipAuth: true,
+            });
+
+            const normalized = normalizeAuthResponse(data);
+            if (!normalized) {
+              throw new Error('Google login succeeded but no access token was returned.');
+            }
+
+            saveTokens(normalized);
+            onSuccess?.(normalized);
+          } catch (e) {
+            onError?.(e);
+          } finally {
+            setLoading(false);
+          }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        // Helps on some browsers where One Tap is gated behind FedCM.
+        use_fedcm_for_prompt: true,
+      });
+
+      setReady(true);
+      return true;
+    } catch (e) {
+      onError?.(e);
+      return false;
+    }
+  };
+
   const buttonText = useMemo(() => {
     if (label) return label;
     if (role === 'brand') return 'Continue with Google (Brand)';
@@ -38,59 +91,11 @@ export default function GoogleAuthButton({
   useEffect(() => {
     if (!clientId) return;
 
-    const tryInit = () => {
-      const google = window?.google;
-      if (!google?.accounts?.id) return false;
-
-      try {
-        google.accounts.id.initialize({
-          client_id: clientId,
-          callback: async (resp) => {
-            const idToken = resp?.credential;
-            if (!idToken) {
-              const err = new Error('Google sign-in did not return an ID token.');
-              onError?.(err);
-              return;
-            }
-
-            setLoading(true);
-            try {
-              const payload = role ? { idToken, role } : { idToken };
-              const data = await apiClient.request('/auth/google', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                skipAuth: true,
-              });
-
-              const normalized = normalizeAuthResponse(data);
-              if (!normalized) {
-                throw new Error('Google login succeeded but no access token was returned.');
-              }
-
-              saveTokens(normalized);
-              onSuccess?.(normalized);
-            } catch (e) {
-              onError?.(e);
-            } finally {
-              setLoading(false);
-            }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-
-        setReady(true);
-        return true;
-      } catch {
-        return false;
-      }
-    };
-
     // GIS loads asynchronously; poll briefly.
     let tries = 0;
     const timer = window.setInterval(() => {
       tries += 1;
-      if (tryInit()) {
+      if (initIfPossible()) {
         window.clearInterval(timer);
       } else if (tries > 25) {
         window.clearInterval(timer);
@@ -108,7 +113,28 @@ export default function GoogleAuthButton({
     }
 
     try {
-      google.accounts.id.prompt();
+      initIfPossible();
+      google.accounts.id.prompt((notification) => {
+        try {
+          if (notification?.isNotDisplayed?.()) {
+            const reason = notification?.getNotDisplayedReason?.() || 'unknown';
+            onError?.(
+              new Error(
+                `Google popup was not displayed (${reason}). Common fixes: add this origin in Google Cloud OAuth "Authorized JavaScript origins" (e.g. ${window.location.origin}), allow third-party cookies, disable ad-blockers.`
+              )
+            );
+          } else if (notification?.isSkippedMoment?.()) {
+            const reason = notification?.getSkippedReason?.() || 'unknown';
+            onError?.(
+              new Error(
+                `Google login was skipped (${reason}). Try again in an Incognito window, or clear site data for ${window.location.origin}.`
+              )
+            );
+          }
+        } catch {
+          // ignore
+        }
+      });
     } catch (e) {
       onError?.(e);
     }
@@ -118,7 +144,7 @@ export default function GoogleAuthButton({
     <div ref={containerRef} className="w-full">
       <button
         type="button"
-        disabled={!clientId || !ready || loading}
+        disabled={!clientId || loading}
         onClick={startGoogle}
         className={
           className ||
