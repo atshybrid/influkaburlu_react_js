@@ -15,3 +15,7 @@
 *.jpg filter=lfs diff=lfs merge=lfs -text
 *.jpeg filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
+
+# Vercel builds typically don't fetch Git LFS objects.
+# Ensure website assets in /public are stored directly in Git.
+public/assets/** -filter -diff -merge -text

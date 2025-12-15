@@ -66,7 +66,7 @@ export default function Hero() {
               {/* wide video card */}
               <div className="absolute right-0 top-0 h-36 w-56 sm:h-40 sm:w-64 lg:top-2 lg:h-44 lg:w-80 rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 overflow-hidden animate-float z-20" style={{animationDelay:'0.4s'}}>
                 {/* Drop a short hero video here later */}
-                <video className="h-full w-full object-cover" autoPlay muted loop playsInline poster="/assets/hero-video-poster.jpg">
+                <video className="h-full w-full object-cover" autoPlay muted loop playsInline poster="/assets/brand-logo.png">
                   <source src="/assets/hero-video.mp4" type="video/mp4" />
                 </video>
               </div>
