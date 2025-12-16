@@ -1,223 +1,310 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useCurrency, formatPrice } from '../utils/useCurrency';
-// use existing named import below; remove duplicate default import to avoid redeclaration
+import React from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { apiClient } from '../utils/apiClient';
+import SeoHead from '../components/SeoHead';
 
-export default function InfluencerProfile(){
+function normalizeInfluencerSeoResponse(data) {
+  if (!data || typeof data !== 'object') return null;
+  return {
+    title: data.title || data.seoTitle || '',
+    description: data.description || data.seoDescription || '',
+    keywords: data.keywords || data.seoKeywords || '',
+    canonical: data.canonical || data.canonicalUrl || '',
+    ogImage: data.ogImage || data.og_image || data.og || '',
+    schema: data.schema || data.schemaJson || null,
+    indexed: typeof data.indexed === 'boolean' ? data.indexed : true,
+  };
+}
+
+function buildPlaybackUrl(url, { autoplay = true, muted = true } = {}) {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    if (autoplay) u.searchParams.set('autoplay', 'true');
+    if (muted) u.searchParams.set('muted', 'true');
+    return u.toString();
+  } catch {
+    const hasQuery = String(url).includes('?');
+    const params = [];
+    if (autoplay) params.push('autoplay=true');
+    if (muted) params.push('muted=true');
+    if (params.length === 0) return url;
+    return `${url}${hasQuery ? '&' : '?'}${params.join('&')}`;
+  }
+}
+
+function normalizePublicInfluencer(inf) {
+  if (!inf || typeof inf !== 'object') return null;
+  const rawHandle = inf.handle || inf.handleDisplay || '';
+  const handleText = rawHandle ? (String(rawHandle).startsWith('@') ? String(rawHandle) : `@${rawHandle}`) : '';
+  const nameText = inf.name || inf.displayName || handleText?.replace('@', '') || 'Creator';
+  const badge = inf.badgeName || (Array.isArray(inf.badges) ? inf.badges[0] : '') || '';
+  const videos = Array.isArray(inf.videos) ? inf.videos : [];
+
+  return {
+    name: nameText,
+    handle: handleText,
+    profilePicUrl: inf.profilePicUrl || '',
+    verificationStatus: inf.verificationStatus,
+    badge,
+    location: inf.location || inf.city || inf.state || inf.country || '',
+    bio: inf.bio || inf.about || '',
+    videos,
+    bestVideo: inf.bestVideo || videos[0] || null,
+  };
+}
+
+export default function InfluencerProfile() {
   const { slug } = useParams();
-  const currency = useCurrency();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [showAvatarEdit, setShowAvatarEdit] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState('');
+  const [seo, setSeo] = React.useState(null);
+  const [influencer, setInfluencer] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState('');
 
-  useEffect(() => {
+  React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await apiClient.request('/influencers/me');
-        if (!mounted) return;
-        const p = {
-          name: res.handle?.replace('@','') || 'Creator',
-          handle: res.handle || '@creator',
-          photo: res.profilePicUrl || 'https://images.unsplash.com/photo-1520975922215-c4f2a42b4a97?q=80&w=800&auto=format&fit=crop',
-          header: 'https://images.unsplash.com/photo-1520975922215-c4f2a42b4a97?q=80&w=1600&auto=format&fit=crop',
-          location: res.states?.[0] || 'India',
-          bio: res.bio || '—',
-          stats: { reach: (res.followers?.instagram ? `${(res.followers.instagram).toLocaleString('en-IN')}` : '—'), engagement: '—', platforms: ['Instagram'] },
-          media: res.posts?.length ? res.posts.map(x => x.thumbnail || x.url).slice(0,8) : [
-            'https://images.unsplash.com/photo-1541354329998-f4d727b38aac?q=80&w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1514653045307-977c1e8f68bd?q=80&w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1603252109303-2751441dd157?q=80&w=600&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1549480017-d76466a4b7b5?q=80&w=600&auto=format&fit=crop'
-          ],
-          raw: res,
-        };
-        setProfile(p);
+        if (!slug) return;
+        const data = await apiClient.request(`/seo/influencer/${encodeURIComponent(slug)}`, {
+          method: 'GET',
+          skipAuth: true,
+        });
+        if (mounted) setSeo(normalizeInfluencerSeoResponse(data));
+      } catch {
+        if (mounted) setSeo(null);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [slug]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError('');
+        if (!slug) return;
+
+        // Preferred: direct public profile endpoint
+        try {
+          const res = await apiClient.request(`/public/influencers/${encodeURIComponent(slug)}`, {
+            method: 'GET',
+            skipAuth: true,
+          });
+          const normalized = normalizePublicInfluencer(res);
+          if (mounted) setInfluencer(normalized);
+          return;
+        } catch {
+          // Fallback: fetch a page and match by slug/handle
+        }
+
+        const listRes = await apiClient.request('/public/influencers?limit=60&offset=0', {
+          method: 'GET',
+          skipAuth: true,
+        });
+        const items = Array.isArray(listRes?.items) ? listRes.items : [];
+        const found = items.find((x) => {
+          const candidateSlug = (x?.slug || '').toString().toLowerCase();
+          const handle = (x?.handle || x?.handleDisplay || '').toString().replace('@', '').toLowerCase();
+          const target = String(slug).toLowerCase();
+          return candidateSlug === target || handle === target;
+        });
+
+        const normalized = normalizePublicInfluencer(found);
+        if (mounted) {
+          if (!normalized) setError('Creator not found');
+          setInfluencer(normalized);
+        }
       } catch (e) {
-        console.error('Load profile error:', e);
-        setError(e?.message || 'Failed to load profile.');
+        if (mounted) setError(typeof e?.message === 'string' ? e.message : 'Failed to load creator');
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
-  }, []);
+    return () => {
+      mounted = false;
+    };
+  }, [slug]);
 
-  const [form, setForm] = useState({
-    handle: '',
-    addressLine1: '',
-    addressLine2: '',
-    postalCode: '',
-    stateIds: [],
-    districtId: '',
-    languages: [],
-    socialLinks: { instagram: '', youtube: '' },
-    adPricing: {
-      instagramPost: 0,
-      instagramStory: 0,
-      instagramReel: 0,
-      youtubeShort: 0,
-      youtubeIntegration: 0,
-      bundleInstagramReelStory: 0,
-      exclusiveCategory: 0,
-      travelAllowancePerDay: 0,
-      negotiable: true,
-      currency: 'INR'
-    },
-  });
+  const videoSrc = React.useMemo(() => {
+    const raw = influencer?.bestVideo?.playbackUrl || '';
+    return buildPlaybackUrl(raw, { autoplay: true, muted: true });
+  }, [influencer?.bestVideo?.playbackUrl]);
 
-  useEffect(() => {
-    if (profile?.raw) {
-      const r = profile.raw;
-      setForm({
-        handle: r.handle || '',
-        addressLine1: r.addressLine1 || '',
-        addressLine2: r.addressLine2 || '',
-        postalCode: r.postalCode || '',
-        stateIds: r.stateIds || [],
-        districtId: r.districtId || '',
-        languages: r.languages || [],
-        socialLinks: {
-          instagram: r.socialLinks?.instagram || '',
-          youtube: r.socialLinks?.youtube || '',
-        },
-        adPricing: {
-          instagramPost: r.adPricing?.instagramPost || 0,
-          instagramStory: r.adPricing?.instagramStory || 0,
-          instagramReel: r.adPricing?.instagramReel || 0,
-          youtubeShort: r.adPricing?.youtubeShort || 0,
-          youtubeIntegration: r.adPricing?.youtubeIntegration || 0,
-          bundleInstagramReelStory: r.adPricing?.bundleInstagramReelStory || 0,
-          exclusiveCategory: r.adPricing?.exclusiveCategory || 0,
-          travelAllowancePerDay: r.adPricing?.travelAllowancePerDay || 0,
-          negotiable: r.adPricing?.negotiable ?? true,
-          currency: 'INR',
-        },
-      });
-    }
-  }, [profile]);
-
-  async function saveProfile(e){
-    e?.preventDefault();
-    setSaving(true); setError('');
-    try {
-      const payload = { ...form, countryId: profile?.raw?.countryId || 101 };
-      if (avatarUrl) {
-        await apiClient.request('/influencers/me/profile-pic', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrl: avatarUrl }),
-        });
-      }
-      const res = await apiClient.request('/influencers/me', {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      });
-      // reflect saved values
-      setProfile(p => p ? { ...p, raw: { ...p.raw, ...res }, photo: avatarUrl || res.profilePicUrl || p.photo } : p);
-      if (avatarUrl) { setShowAvatarEdit(false); setAvatarUrl(''); }
-    } catch (e) {
-      console.error('Save profile error:', e);
-      setError(e?.message || 'Failed to save profile.');
-    } finally {
-      setSaving(false);
-    }
+  if (loading) {
+    return (
+      <main className="py-10">
+        <SeoHead
+          title={seo?.title || 'Creator profile'}
+          description={seo?.description || ''}
+          keywords={seo?.keywords || ''}
+          canonical={seo?.canonical || ''}
+          ogImage={seo?.ogImage || ''}
+          schema={seo?.schema || null}
+          noindex={seo?.indexed === false}
+        />
+        <div className="animate-pulse">
+          <div className="h-56 w-full bg-gray-200 rounded-2xl" />
+          <div className="mt-6 h-6 w-56 bg-gray-200 rounded" />
+          <div className="mt-2 h-4 w-72 bg-gray-200 rounded" />
+          <div className="mt-8 grid md:grid-cols-2 gap-6">
+            <div className="h-[420px] bg-gray-200 rounded-2xl" />
+            <div className="h-[420px] bg-gray-200 rounded-2xl" />
+          </div>
+        </div>
+      </main>
+    );
   }
 
-  if (loading) return (
-    <section className="py-10">
-      <div className="animate-pulse">
-        <div className="h-56 w-full bg-gray-200 rounded-2xl" />
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-24 bg-gray-200 rounded-xl" />
-          ))}
+  if (error) {
+    return (
+      <main className="py-10">
+        <SeoHead
+          title={seo?.title || 'Creator profile'}
+          description={seo?.description || ''}
+          keywords={seo?.keywords || ''}
+          canonical={seo?.canonical || ''}
+          ogImage={seo?.ogImage || ''}
+          schema={seo?.schema || null}
+          noindex={seo?.indexed === false}
+        />
+        <div className="text-red-600 text-sm">{error}</div>
+        <div className="mt-4">
+          <Link to="/influencers" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
         </div>
-        <div className="mt-6 h-4 w-48 bg-gray-200 rounded" />
-        <div className="mt-2 h-3 w-96 bg-gray-200 rounded" />
-        <div className="mt-8 grid md:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="rounded-2xl p-[1px] bg-gray-200/60">
-              <div className="rounded-2xl bg-white p-5 h-28" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-  if (error) return (<section className="py-10"><div className="text-red-600 text-sm">{error}</div></section>);
+      </main>
+    );
+  }
 
-  if (!profile) return (<section className="py-10"><div className="text-gray-600">No profile data.</div></section>);
+  if (!influencer) {
+    return (
+      <main className="py-10">
+        <SeoHead
+          title={seo?.title || 'Creator profile'}
+          description={seo?.description || ''}
+          keywords={seo?.keywords || ''}
+          canonical={seo?.canonical || ''}
+          ogImage={seo?.ogImage || ''}
+          schema={seo?.schema || null}
+          noindex={seo?.indexed === false}
+        />
+        <div className="text-gray-600">No profile data.</div>
+      </main>
+    );
+  }
+
+  const avatarSrc = influencer.profilePicUrl || '/assets/brand-logo.png';
 
   return (
-    <section className="py-10">
-      <div className="relative overflow-hidden rounded-2xl">
-        <img src={profile.header} alt="header" className="h-56 w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={()=>setShowAvatarEdit(true)} className="relative">
-              <img src={profile.photo} alt="avatar" className="h-16 w-16 rounded-full ring-2 ring-white object-cover" />
-              <span className="absolute -bottom-1 -right-1 text-[10px] px-1.5 py-0.5 rounded bg-white/90 ring-1 ring-gray-300 text-gray-700">Edit</span>
-            </button>
-            <div className="text-white">
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-bold">{profile.name}</span>
-                <span className="inline-flex items-center px-2 py-0.5 text-[11px] rounded bg-white/20 ring-1 ring-white/30">Verified</span>
+    <main className="py-10">
+      <SeoHead
+        title={seo?.title || influencer.name}
+        description={seo?.description || influencer.bio || ''}
+        keywords={seo?.keywords || ''}
+        canonical={seo?.canonical || ''}
+        ogImage={seo?.ogImage || avatarSrc}
+        schema={seo?.schema || null}
+        noindex={seo?.indexed === false}
+        ogType="profile"
+      />
+
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <Link to="/influencers" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
+          <div className="mt-3 flex items-center gap-3">
+            <div className="h-14 w-14 rounded-full overflow-hidden ring-1 ring-gray-200 bg-gray-50">
+              <img
+                src={avatarSrc}
+                alt={influencer.name}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = '/assets/brand-logo.png';
+                }}
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">{influencer.name}</h1>
+                {influencer.badge && (
+                  <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 ring-1 ring-orange-200">
+                    {influencer.badge}
+                  </span>
+                )}
               </div>
-              <div className="text-xs opacity-90">{profile.handle} • {profile.location}</div>
-              <div className="mt-1 flex items-center gap-2">
-                {profile.stats.platforms.map(p => (
-                  <span key={p} className="text-[11px] px-2 py-0.5 rounded bg-white/15 ring-1 ring-white/30">{p}</span>
-                ))}
-              </div>
+              <div className="text-sm text-gray-600">{influencer.handle}{influencer.location ? ` • ${influencer.location}` : ''}</div>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-2">
-            <Link to={`/login?next=/dashboard/advertiser`} className="px-3 py-1.5 rounded-md text-xs font-medium text-white bg-gradient-to-r from-orange-600 to-pink-600">Start Collaboration</Link>
-            <Link to={`/login?next=/dashboard/advertiser`} className="px-3 py-1.5 rounded-md text-xs font-medium text-white/90 bg-white/20 ring-1 ring-white/40">Request Media Kit</Link>
-          </div>
+        </div>
+
+        <div className="hidden md:flex items-center gap-2">
+          <Link
+            to="/get-started?role=brand"
+            className="px-3 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-orange-600 to-pink-600"
+          >
+            Start collaboration
+          </Link>
+          <Link
+            to="/login?next=/dashboard-advertiser"
+            className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 bg-white ring-1 ring-gray-200 hover:bg-gray-50"
+          >
+            I already have an account
+          </Link>
         </div>
       </div>
 
-      <p className="mt-6 text-gray-700 max-w-3xl">{profile.bio}</p>
+      {influencer.bio && <p className="mt-5 text-gray-700 max-w-3xl">{influencer.bio}</p>}
 
-      {/* Quick edit form */}
-      <div className="mt-8 rounded-2xl p-[1px] bg-gray-200/60">
-        <div className="rounded-2xl bg-white p-6">
-          <h2 className="text-lg font-semibold">Edit Profile</h2>
-          <form className="mt-4 grid md:grid-cols-2 gap-4" onSubmit={saveProfile}>
-            <label className="text-sm text-gray-700">Handle
-              <input className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.handle} onChange={e=>setForm({ ...form, handle: e.target.value })} />
-            </label>
-            <label className="text-sm text-gray-700">Postal Code
-              <input className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.postalCode} onChange={e=>setForm({ ...form, postalCode: e.target.value })} />
-            </label>
-            <label className="text-sm text-gray-700">Address Line 1
-              <input className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.addressLine1} onChange={e=>setForm({ ...form, addressLine1: e.target.value })} />
-            </label>
-            <label className="text-sm text-gray-700">Address Line 2
-              <input className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.addressLine2} onChange={e=>setForm({ ...form, addressLine2: e.target.value })} />
-            </label>
-            <label className="text-sm text-gray-700">Instagram
-              <input className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.socialLinks.instagram} onChange={e=>setForm({ ...form, socialLinks: { ...form.socialLinks, instagram: e.target.value } })} />
-            </label>
-            <label className="text-sm text-gray-700">YouTube
-              <input className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.socialLinks.youtube} onChange={e=>setForm({ ...form, socialLinks: { ...form.socialLinks, youtube: e.target.value } })} />
-            </label>
-            <div className="md:col-span-2 grid md:grid-cols-3 gap-4">
-              <label className="text-sm text-gray-700">Instagram Reel (₹)
-                <input type="number" className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.adPricing.instagramReel} onChange={e=>setForm({ ...form, adPricing: { ...form.adPricing, instagramReel: Number(e.target.value)||0 } })} />
-              </label>
-              <label className="text-sm text-gray-700">Instagram Story (₹)
-                <input type="number" className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.adPricing.instagramStory} onChange={e=>setForm({ ...form, adPricing: { ...form.adPricing, instagramStory: Number(e.target.value)||0 } })} />
-              </label>
-              <label className="text-sm text-gray-700">Instagram Post (₹)
-                <input type="number" className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500" value={form.adPricing.instagramPost} onChange={e=>setForm({ ...form, adPricing: { ...form.adPricing, instagramPost: Number(e.target.value)||0 } })} />
-              </label>
+      <div className="mt-8 grid md:grid-cols-2 gap-6">
+        <div className="rounded-2xl overflow-hidden ring-1 ring-gray-200 bg-white">
+          <div className="p-4">
+            <h2 className="font-semibold">Latest ad video</h2>
+            <p className="text-sm text-gray-600 mt-1">Preview creator content.</p>
+          </div>
+          <div className="bg-gray-50">
+            <div className="w-full" style={{ aspectRatio: '9/16' }}>
+              {videoSrc ? (
+                <iframe
+                  src={videoSrc}
+                  title={`${influencer.name}-video`}
+                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                  className="w-full h-full"
+                />
+              ) : (
+                <div className="w-full h-full grid place-items-center text-sm text-gray-600">No videos</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl ring-1 ring-gray-200 bg-white p-6">
+          <h2 className="font-semibold">Work with this creator</h2>
+          <p className="text-sm text-gray-600 mt-1">Sign in as a brand to request a collaboration.</p>
+          <div className="mt-4 grid gap-2">
+            <Link to="/get-started?role=brand" className="px-4 py-2 rounded-md text-sm font-medium text-white bg-orange-600">
+              Create a brand account
+            </Link>
+            <Link to="/login?next=/dashboard-advertiser" className="px-4 py-2 rounded-md text-sm font-medium text-gray-700 bg-white ring-1 ring-gray-200 hover:bg-gray-50">
+              Login
+            </Link>
+          </div>
+          {influencer.videos?.length > 1 && (
+            <div className="mt-4 text-xs text-gray-500">More videos are available in the creators list.</div>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/*
+Legacy code (old editable profile page) was accidentally appended here during refactor.
+It is intentionally disabled to keep /influencer/:slug a public, SEO-friendly page.
+
             </div>
             <div className="md:col-span-2 flex items-center justify-end gap-2">
               <button type="submit" disabled={saving} className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-900">{saving ? 'Saving…' : 'Save Changes'}</button>
@@ -415,3 +502,5 @@ async function uploadAndSave() {
     setSaving(false);
   }
 }
+
+*/

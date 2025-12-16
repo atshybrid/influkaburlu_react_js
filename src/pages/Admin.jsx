@@ -1,5 +1,9 @@
+import SeoHead from '../components/SeoHead';
+
 export default function Admin(){
   return (
+    <>
+    <SeoHead title="Admin" noindex />
     <section className="py-10">
       <h1 className="text-2xl md:text-3xl font-bold">Admin Panel</h1>
       <p className="text-gray-600 mt-1">Internal tools for the backend team.</p>
@@ -9,6 +13,7 @@ export default function Admin(){
         <Panel title="System" items={["Health checks","Logs","Feature flags"]}/>
       </div>
     </section>
+    </>
   )
 }
 

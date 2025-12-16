@@ -9,15 +9,58 @@
 		<link rel="apple-touch-icon" href="/assets/brand-logo.png" />
 		<meta name="theme-color" content="#f97316" />
 		<meta name="description" content="Influ Kaburlu — the best place for influencer collaboration and native creator ads. Find high‑fit creators, streamline workflows, and measure real ROAS." />
+		<meta name="google-site-verification" content="%VITE_PUBLIC_GOOGLE_SITE_VERIFICATION%" />
 		<meta property="og:title" content="Influ Kaburlu — Influencer Collaboration & Native Ads" />
 		<meta property="og:description" content="Discover creators your audience already loves. Launch native ads and measure real conversions." />
 		<meta property="og:type" content="website" />
 		<meta property="og:image" content="/assets/brand-logo.png" />
-		<meta property="og:url" content="https://kaburlu.example" />
+		<meta property="og:url" content="%VITE_FRONTEND_URL%" />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content="Influ Kaburlu — Influencer Collaboration & Native Ads" />
 		<meta name="twitter:description" content="Find high‑fit creators, streamline workflows, and prove ROAS." />
 		<meta name="twitter:image" content="/assets/brand-logo.png" />
+
+		<!-- Analytics (loaded only when IDs are set) -->
+		<script>
+			(function () {
+				var GA_ID = '%VITE_PUBLIC_GA_ID%';
+				var GTM_ID = '%VITE_PUBLIC_GTM_ID%';
+				var hasRealGa = GA_ID && GA_ID.indexOf('XXXX') === -1 && GA_ID.startsWith('G-');
+				var hasRealGtm = GTM_ID && GTM_ID.indexOf('XXXX') === -1 && GTM_ID.startsWith('GTM-');
+
+				if (hasRealGa) {
+					var gtagScript = document.createElement('script');
+					gtagScript.async = true;
+					gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
+					document.head.appendChild(gtagScript);
+
+					window.dataLayer = window.dataLayer || [];
+					function gtag(){ window.dataLayer.push(arguments); }
+					gtag('js', new Date());
+					gtag('config', GA_ID);
+				}
+
+				if (hasRealGtm) {
+					window.dataLayer = window.dataLayer || [];
+					window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+					var gtmScript = document.createElement('script');
+					gtmScript.async = true;
+					gtmScript.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(GTM_ID);
+					document.head.appendChild(gtmScript);
+
+					// Noscript fallback (best-effort)
+					var iframe = document.createElement('iframe');
+					iframe.src = 'https://www.googletagmanager.com/ns.html?id=' + encodeURIComponent(GTM_ID);
+					iframe.height = '0';
+					iframe.width = '0';
+					iframe.style.display = 'none';
+					iframe.style.visibility = 'hidden';
+					document.addEventListener('DOMContentLoaded', function () {
+						document.body.appendChild(iframe);
+					});
+				}
+			})();
+		</script>
 	</head>
 	<body class="bg-gray-50">
 		<div id="root"></div>

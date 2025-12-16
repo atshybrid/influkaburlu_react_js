@@ -2,8 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import PublicInfluencerCard from '../components/PublicInfluencerCard';
 import { apiClient } from '../utils/apiClient';
+import SeoHead from '../components/SeoHead';
+import useSeoPage from '../hooks/useSeoPage';
 
 export default function InfluencersList() {
+  const { seo } = useSeoPage('influencers');
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [loadingMore, setLoadingMore] = React.useState(false);
@@ -59,6 +62,15 @@ export default function InfluencersList() {
 
   return (
     <main className="max-w-6xl mx-auto px-6 py-12">
+      <SeoHead
+        title={seo?.title || 'All creators'}
+        description={seo?.description || ''}
+        keywords={seo?.keywords || ''}
+        canonical={seo?.canonical || ''}
+        ogImage={seo?.ogImage || ''}
+        schema={seo?.schema || null}
+        noindex={seo?.indexed === false}
+      />
       <div className="flex items-end justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 ring-1 ring-orange-200">CREATORS</div>

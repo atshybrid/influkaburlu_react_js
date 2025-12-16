@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { apiClient, getRoleFromToken, normalizeRole, saveTokens } from '../utils/apiClient';
 import { Link, useSearchParams } from 'react-router-dom';
 import GoogleAuthButton from '../components/GoogleAuthButton';
+import SeoHead from '../components/SeoHead';
 
 export default function Login(){
 	const [phone, setPhone] = useState('');
@@ -112,6 +113,8 @@ export default function Login(){
 	};
 
 	return (
+		<>
+			<SeoHead title="Login" noindex />
 		<section className="min-h-screen bg-gradient-to-b from-orange-50 to-pink-50">
 			<div className="max-w-7xl mx-auto px-4 pt-20 pb-16">
 				<div className="grid md:grid-cols-2 gap-8 items-center">
@@ -215,5 +218,6 @@ export default function Login(){
 				</div>
 			</div>
 		</section>
+		</>
 	);
 }

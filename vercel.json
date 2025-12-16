@@ -1,6 +1,8 @@
 {
   "routes": [
     { "handle": "filesystem" },
+    { "src": "/sitemap\\.xml", "dest": "https://influapi.kaburlumedia.com/sitemap.xml" },
+    { "src": "/robots\\.txt", "dest": "https://influapi.kaburlumedia.com/robots.txt" },
     { "src": "/.*", "dest": "/index.html" }
   ]
 }

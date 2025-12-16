@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import GoogleAuthButton from '../components/GoogleAuthButton';
+import SeoHead from '../components/SeoHead';
 
 export default function BrandRegister(){
   const [form, setForm] = useState({
@@ -35,7 +36,9 @@ export default function BrandRegister(){
   };
 
   return (
-    <section className="min-h-screen bg-gradient-to-b from-orange-50 to-pink-50">
+    <>
+      <SeoHead title="Brand Registration" noindex />
+      <section className="min-h-screen bg-gradient-to-b from-orange-50 to-pink-50">
       <div className="max-w-7xl mx-auto px-4 pt-20 pb-16">
         <div className="text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white ring-1 ring-gray-200 text-xs text-gray-700">Advertiser onboarding</div>
@@ -112,6 +115,7 @@ export default function BrandRegister(){
           )}
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }

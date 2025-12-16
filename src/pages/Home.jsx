@@ -1,1 +1,13 @@
-export default function Home(){return (<div className='bg-white p-6 rounded-lg shadow'><h2 className='text-xl font-semibold mb-2'>Welcome to Kaburlu</h2><p className='text-gray-600'>Nationwide influencer ad marketplace — modern UI demo. Use Profile Builder to generate SEO-ready packs.</p></div>);}
+import SeoHead from '../components/SeoHead';
+
+export default function Home(){
+	return (
+		<main>
+			<SeoHead title="Home" noindex />
+			<div className='bg-white p-6 rounded-lg shadow'>
+				<h2 className='text-xl font-semibold mb-2'>Welcome to Kaburlu</h2>
+				<p className='text-gray-600'>Nationwide influencer ad marketplace — modern UI demo. Use Profile Builder to generate SEO-ready packs.</p>
+			</div>
+		</main>
+	);
+}

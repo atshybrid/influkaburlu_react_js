@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 function buildPlaybackUrl(url, { autoplay = false, muted = false } = {}) {
   if (!url) return '';
@@ -50,6 +51,8 @@ export default function PublicInfluencerCard({
   const rawHandle = influencer?.handle || influencer?.handleDisplay || '';
   const handleText = rawHandle ? (String(rawHandle).startsWith('@') ? String(rawHandle) : `@${rawHandle}`) : '@myhandle';
   const nameText = influencer?.name || 'Demo Influencer';
+  const slug = (influencer?.slug || String(rawHandle || '').replace(/^@/, '')).toString();
+  const profileTo = slug ? `/influencer/${encodeURIComponent(slug)}` : null;
   const profilePicUrl = influencer?.profilePicUrl || '';
   const avatarSrc = profilePicUrl || '/assets/brand-logo.png';
   const verificationStatus = influencer?.verificationStatus;
@@ -71,7 +74,13 @@ export default function PublicInfluencerCard({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
-              <div className="font-semibold text-gray-900 truncate">{nameText}</div>
+              {profileTo ? (
+                <Link to={profileTo} className="font-semibold text-gray-900 truncate hover:underline">
+                  {nameText}
+                </Link>
+              ) : (
+                <div className="font-semibold text-gray-900 truncate">{nameText}</div>
+              )}
               {verificationStatus && (
                 <span className="shrink-0 text-emerald-600" title="Verified">
                   <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true">
@@ -83,7 +92,13 @@ export default function PublicInfluencerCard({
                 </span>
               )}
             </div>
-            <div className="text-xs text-gray-600 truncate">{handleText}</div>
+            {profileTo ? (
+              <Link to={profileTo} className="text-xs text-gray-600 truncate hover:underline">
+                {handleText}
+              </Link>
+            ) : (
+              <div className="text-xs text-gray-600 truncate">{handleText}</div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
