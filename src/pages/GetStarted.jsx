@@ -7,7 +7,7 @@ import SeoHead from '../components/SeoHead';
 export default function GetStarted() {
   const [params] = useSearchParams();
   const [role, setRole] = useState('influencer');
-  const [form, setForm] = useState({ name: '', email: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '' });
   const [mpinDigits, setMpinDigits] = useState(['','','','','','']);
   const boxesRef = useRef([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +38,10 @@ export default function GetStarted() {
 
   const register = async (e) => {
     e.preventDefault();
+    if ((form.phone || '').toString().trim().length !== 10) {
+      setError('Please enter a valid 10-digit phone number.');
+      return;
+    }
     if (mpin.length !== 6) {
       setError('Please set a 6-digit MPIN.');
       return;
@@ -45,7 +49,13 @@ export default function GetStarted() {
     setLoading(true); setError(''); setSuccess('');
     try {
       // Backend compatibility: some deployments may still expect `password`.
-      const payload = { ...form, role, mpin, password: mpin };
+      const payload = {
+        ...form,
+        phone: (form.phone || '').toString().trim(),
+        role,
+        mpin,
+        password: mpin,
+      };
       const apiUrl = import.meta.env.VITE_API_URL;
       if (apiUrl) {
         const r = await axios.post(apiUrl + '/auth/register', payload);
@@ -118,6 +128,18 @@ export default function GetStarted() {
                 <form className="mt-5 space-y-4" onSubmit={register}>
                   <label className="block text-sm text-gray-700">Name
                     <input value={form.name} onChange={e=>setForm({ ...form, name: e.target.value })} required className="mt-1 w-full h-12 rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3" placeholder="Full name" />
+                  </label>
+                  <label className="block text-sm text-gray-700">Phone
+                    <input
+                      value={form.phone}
+                      onChange={e=>setForm({ ...form, phone: e.target.value.replace(/[^0-9]/g, '').slice(0,10) })}
+                      required
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      className="mt-1 w-full h-12 rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3 tracking-wider"
+                      placeholder="8282868389"
+                    />
                   </label>
                   <label className="block text-sm text-gray-700">Email
                     <input value={form.email} onChange={e=>setForm({ ...form, email: e.target.value })} required type="email" className="mt-1 w-full h-12 rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3" placeholder="you@company.com" />
