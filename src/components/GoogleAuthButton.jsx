@@ -47,13 +47,21 @@ export default function GoogleAuthButton({
     setLoading(true);
     setPhoneError('');
     try {
+      if (phoneMode === 'before') {
+        const cleaned = (phoneNumber || '').toString().replace(/[^0-9]/g, '').slice(0, 10);
+        if (cleaned.length !== 10) {
+          throw new Error('Phone number is required to complete signup.');
+        }
+        phoneNumber = cleaned;
+      }
+
       const extras = typeof extraPayload === 'function' ? extraPayload() : (extraPayload || {});
       const payload = {
         // Some backends use `idToken`, others use `signupToken`.
         idToken,
         signupToken: idToken,
         ...(role ? { role } : {}),
-        ...(phoneNumber ? { phone: phoneNumber } : {}),
+        ...(phoneMode === 'before' ? { phone: phoneNumber } : (phoneNumber ? { phone: phoneNumber } : {})),
         ...extras,
       };
 

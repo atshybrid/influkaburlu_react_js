@@ -186,6 +186,7 @@ export default function Login(){
 										<div className="mb-1 text-xs text-gray-700">Continue with Google (Creator)</div>
 										<GoogleAuthButton
 											role="influencer"
+											phoneMode="before"
 											onSuccess={(auth) => {
 												const role = auth?.user?.role || 'influencer';
 												const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
@@ -200,6 +201,7 @@ export default function Login(){
 										<div className="mb-1 text-xs text-gray-700">Continue with Google (Brand)</div>
 										<GoogleAuthButton
 											role="brand"
+											phoneMode="before"
 											onSuccess={(auth) => {
 												const role = auth?.user?.role || 'brand';
 												const redirect = next || (role === 'influencer' ? '/dashboard-influencer' : '/dashboard-advertiser');
