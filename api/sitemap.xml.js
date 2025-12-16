@@ -110,10 +110,28 @@ export default async function handler(req, res) {
 
     return (
       `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n` +
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
       `${urlBlocks}\n` +
       `</urlset>\n`
     );
+  }
+
+  function ensureStylesheet(xmlText) {
+    const text = String(xmlText || '');
+    if (!text) return text;
+    if (text.includes('<?xml-stylesheet')) return text;
+
+    if (text.startsWith('<?xml')) {
+      const end = text.indexOf('?>');
+      if (end !== -1) {
+        const before = text.slice(0, end + 2);
+        const after = text.slice(end + 2);
+        return `${before}\n<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>${after.startsWith('\n') ? '' : '\n'}${after}`;
+      }
+    }
+
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n${text}`;
   }
 
   try {
@@ -170,7 +188,7 @@ export default async function handler(req, res) {
     const xml = await r.text();
 
     // Fallback: rewrite backend sitemap locs to frontend domain.
-    const rewritten = xml.replace(/<loc>([^<]+)<\/loc>/gi, (full, rawLoc) => {
+    const rewritten = ensureStylesheet(xml).replace(/<loc>([^<]+)<\/loc>/gi, (full, rawLoc) => {
       const next = toFrontendLoc(rawLoc);
       if (!next || next === rawLoc) return full;
       return `<loc>${xmlEscape(next)}</loc>`;
