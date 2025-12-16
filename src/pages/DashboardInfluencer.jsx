@@ -563,6 +563,13 @@ export default function DashboardInfluencer(){
                     <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] ${pricingChip.cls}`}>{pricingChip.short}</span>
                   </span>
                 </TabButton>
+                <button
+                  type="button"
+                  className="px-3 py-2 rounded-md text-xs font-medium text-white bg-gray-900"
+                  onClick={()=>{ setShowAdUpload(true); setAdPosting(false); setAdVideoFile(null); setAdTitle(''); setAdDescription(''); setAdCaption(''); setAdThumbnailUrl(''); setAdCategory(''); setAdCategoryCode(''); }}
+                >
+                  Upload ads
+                </button>
               </div>
             </div>
           </div>

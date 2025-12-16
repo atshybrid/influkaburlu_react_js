@@ -75,11 +75,11 @@ export default function PublicInfluencerCard({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 min-w-0">
               {profileTo ? (
-                <Link to={profileTo} className="font-semibold text-gray-900 truncate hover:underline">
+                <Link to={profileTo} className="font-semibold text-gray-900 whitespace-normal break-words hover:underline">
                   {nameText}
                 </Link>
               ) : (
-                <div className="font-semibold text-gray-900 truncate">{nameText}</div>
+                <div className="font-semibold text-gray-900 whitespace-normal break-words">{nameText}</div>
               )}
               {verificationStatus && (
                 <span className="shrink-0 text-emerald-600" title="Verified">
