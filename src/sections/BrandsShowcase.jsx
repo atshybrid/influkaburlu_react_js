@@ -50,7 +50,7 @@ export default function BrandsShowcase(){
 
         {/* Call to action row */}
         <div className="mt-10 flex items-center justify-center gap-3">
-          <motion.a whileHover={{scale:1.03}} href="/influencers" className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50">Browse creators
+          <motion.a whileHover={{scale:1.03}} href="/creators" className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50">Browse creators
             <svg viewBox="0 0 20 20" className="h-4 w-4"><path fill="currentColor" d="M7 5l5 5-5 5V5z"/></svg>
           </motion.a>
           <motion.a whileHover={{scale:1.03}} href="/login" className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-500 hover:to-pink-500">Start Collaboration</motion.a>

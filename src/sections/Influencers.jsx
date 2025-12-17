@@ -45,7 +45,15 @@ export default function Influencers() {
         setError('');
         const res = await apiClient.request('/public/influencers?limit=30&offset=0', { method: 'GET', skipAuth: true });
         const list = Array.isArray(res?.items) ? res.items : [];
-        if (mounted) setItems(list);
+        const verifiedOnly = list.filter((x) => {
+          const v = (x?.verificationStatus || x?.verifiedStatus || '').toString().toLowerCase();
+          if (v) return v === 'verified' || v === 'approved';
+          if (typeof x?.isVerified === 'boolean') return x.isVerified;
+          if (typeof x?.verified === 'boolean') return x.verified;
+          return false;
+        });
+        const chosen = verifiedOnly.length ? verifiedOnly : list;
+        if (mounted) setItems(chosen);
       } catch (e) {
         if (mounted) setError(typeof e?.message === 'string' ? e.message : 'Failed to load creators');
       } finally {
@@ -66,7 +74,7 @@ export default function Influencers() {
           <p className="mt-2 text-gray-600">Watch their latest ad videos</p>
         </div>
         <Link
-          to="/influencers"
+          to="/creators"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
         >
           View all

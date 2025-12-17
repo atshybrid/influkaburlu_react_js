@@ -124,7 +124,7 @@ export default function Login(){
 						<p className="mt-2 text-sm text-gray-600">Access your campaigns, collaborations, and insights all in one place.</p>
 						<div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
 							<Link to="/get-started?role=influencer" className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white ring-1 ring-gray-200 text-gray-800">Create Creator account</Link>
-							<Link to="/register/brand" className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white ring-1 ring-gray-200 text-gray-800">Create Brand account</Link>
+							<Link to="/brand/register" className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white ring-1 ring-gray-200 text-gray-800">Create Brand account</Link>
 						</div>
 					</div>
 					<div className="mx-auto w-full max-w-md">

@@ -18,6 +18,15 @@ function normalizeTitle(title) {
   return `${t} | ${siteName}`;
 }
 
+function toAbsoluteUrl(url, baseUrl) {
+  const u = (url || '').toString().trim();
+  if (!u) return '';
+  if (/^https?:\/\//i.test(u)) return u;
+  if (!baseUrl) return u;
+  if (u.startsWith('/')) return `${baseUrl}${u}`;
+  return `${baseUrl}/${u}`;
+}
+
 export default function SeoHead({
   title,
   description,
@@ -43,7 +52,7 @@ export default function SeoHead({
 
   const resolvedOgImage = (() => {
     const img = (ogImage || '').toString().trim();
-    if (img) return img;
+    if (img) return toAbsoluteUrl(img, baseUrl);
     // Prefer a stable absolute URL when possible.
     if (!baseUrl) return '/assets/brand-logo.png';
     return `${baseUrl}/assets/brand-logo.png`;

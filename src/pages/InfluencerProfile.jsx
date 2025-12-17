@@ -173,7 +173,7 @@ export default function InfluencerProfile() {
         />
         <div className="text-red-600 text-sm">{error}</div>
         <div className="mt-4">
-          <Link to="/influencers" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
+          <Link to="/creators" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
         </div>
       </main>
     );
@@ -213,7 +213,7 @@ export default function InfluencerProfile() {
 
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Link to="/influencers" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
+          <Link to="/creators" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
           <div className="mt-3 flex items-center gap-3">
             <div className="h-14 w-14 rounded-full overflow-hidden ring-1 ring-gray-200 bg-gray-50">
               <img

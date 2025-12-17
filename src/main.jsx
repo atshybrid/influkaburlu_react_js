@@ -15,6 +15,10 @@ import InfluencersList from './pages/InfluencersList';
 import DashboardInfluencer from './pages/DashboardInfluencer';
 import DashboardAdvertiser from './pages/DashboardAdvertiser';
 import Admin from './pages/Admin';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Terms from './pages/Terms';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import SeoHead from './components/SeoHead';
@@ -35,9 +39,16 @@ function App(){
 						<Route path="/login" element={<Login/>} />
                     	<Route path="/get-started" element={<GetStarted/>} />
 						<Route path="/brands" element={<Brands/>} />
-                    	<Route path="/register/brand" element={<BrandRegister/>} />
+						<Route path="/register/brand" element={<BrandRegister/>} />
+						<Route path="/brand/register" element={<BrandRegister/>} />
 						<Route path="/influencers" element={<InfluencersList/>} />
+						<Route path="/creators" element={<InfluencersList/>} />
 						<Route path="/influencer/:slug" element={<PublicInfluencerProfile/>} />
+						<Route path="/creators/:slug" element={<PublicInfluencerProfile/>} />
+						<Route path="/about" element={<About/>} />
+						<Route path="/contact" element={<Contact/>} />
+						<Route path="/privacy-policy" element={<PrivacyPolicy/>} />
+						<Route path="/terms" element={<Terms/>} />
 						<Route path="/dashboard/influencer" element={<RequireAuth role="influencer"><DashboardInfluencer/></RequireAuth>} />
 						<Route path="/dashboard/advertiser" element={<RequireAuth role="advertiser"><DashboardAdvertiser/></RequireAuth>} />
 						<Route path="/dashboard-influencer" element={<RequireAuth role="influencer"><DashboardInfluencer/></RequireAuth>} />

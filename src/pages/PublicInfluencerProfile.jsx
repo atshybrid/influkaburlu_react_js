@@ -49,8 +49,61 @@ function normalizePublicInfluencer(inf) {
     badge,
     location: inf.location || inf.city || inf.state || inf.country || '',
     bio: inf.bio || inf.about || '',
+    instagramUrl: inf.instagramUrl || inf.instagram || inf.instagram_link || '',
+    youtubeUrl: inf.youtubeUrl || inf.youtube || inf.youtube_link || '',
     videos,
     bestVideo: inf.bestVideo || videos[0] || null,
+  };
+}
+
+function getPrerenderedInfluencer(slug) {
+  try {
+    if (typeof window === 'undefined') return null;
+    const payload = window.__PRERENDERED_INFLUENCER__;
+    if (!payload || typeof payload !== 'object') return null;
+    const pSlug = (payload.slug || '').toString().toLowerCase();
+    const target = (slug || '').toString().toLowerCase();
+    if (!pSlug || !target || pSlug !== target) return null;
+    return payload.data || null;
+  } catch {
+    return null;
+  }
+}
+
+function buildPersonSchema(influencer, { canonicalUrl, baseUrl } = {}) {
+  if (!influencer) return null;
+  const sameAs = [influencer.instagramUrl, influencer.youtubeUrl].filter(Boolean);
+
+  const person = {
+    '@type': 'Person',
+    name: influencer.name,
+    url: canonicalUrl || undefined,
+    image: influencer.profilePicUrl || undefined,
+    jobTitle: 'Social Media Influencer',
+    address: influencer.location
+      ? {
+          '@type': 'Place',
+          addressLocality: influencer.location,
+          addressCountry: 'India',
+        }
+      : undefined,
+    sameAs: sameAs.length ? sameAs : undefined,
+  };
+
+  const breadcrumb = baseUrl
+    ? {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${baseUrl}/` },
+          { '@type': 'ListItem', position: 2, name: 'Creators', item: `${baseUrl}/creators` },
+          { '@type': 'ListItem', position: 3, name: influencer.name, item: canonicalUrl || undefined },
+        ],
+      }
+    : null;
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [person, ...(breadcrumb ? [breadcrumb] : [])],
   };
 }
 
@@ -60,6 +113,20 @@ export default function PublicInfluencerProfile() {
   const [influencer, setInfluencer] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
+
+  const frontendBase = (import.meta.env.VITE_FRONTEND_URL || '').toString().replace(/\/+$/, '');
+  const canonicalCreators = slug && frontendBase ? `${frontendBase}/creators/${encodeURIComponent(slug)}` : '';
+
+  React.useEffect(() => {
+    const pre = getPrerenderedInfluencer(slug);
+    if (!pre) return;
+    const normalized = normalizePublicInfluencer(pre);
+    if (!normalized) return;
+    setInfluencer(normalized);
+    setSeo(null);
+    setLoading(false);
+    setError('');
+  }, [slug]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -84,6 +151,8 @@ export default function PublicInfluencerProfile() {
     let mounted = true;
     (async () => {
       try {
+        // If we already have prerendered data for this slug, skip network fetch.
+        if (getPrerenderedInfluencer(slug)) return;
         setLoading(true);
         setError('');
         if (!slug) return;
@@ -139,9 +208,9 @@ export default function PublicInfluencerProfile() {
       title={seo?.title || influencer?.name || 'Creator profile'}
       description={seo?.description || influencer?.bio || ''}
       keywords={seo?.keywords || ''}
-      canonical={seo?.canonical || ''}
+      canonical={seo?.canonical || canonicalCreators || ''}
       ogImage={seo?.ogImage || influencer?.profilePicUrl || ''}
-      schema={seo?.schema || null}
+      schema={seo?.schema || buildPersonSchema(influencer, { canonicalUrl: canonicalCreators, baseUrl: frontendBase }) || null}
       noindex={seo?.indexed === false}
       ogType="profile"
     />
@@ -170,7 +239,7 @@ export default function PublicInfluencerProfile() {
         {head}
         <div className="text-red-600 text-sm">{error}</div>
         <div className="mt-4">
-          <Link to="/influencers" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
+          <Link to="/creators" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
         </div>
       </main>
     );
@@ -193,12 +262,15 @@ export default function PublicInfluencerProfile() {
 
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Link to="/influencers" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
+          <Link to="/creators" className="text-sm text-orange-700 hover:underline">Back to creators</Link>
           <div className="mt-3 flex items-center gap-3">
             <div className="h-14 w-14 rounded-full overflow-hidden ring-1 ring-gray-200 bg-gray-50">
               <img
                 src={avatarSrc}
-                alt={influencer.name}
+                alt={`${influencer.name} social media influencer`}
+                width="56"
+                height="56"
+                loading="eager"
                 className="h-full w-full object-cover"
                 onError={(e) => {
                   e.currentTarget.src = '/assets/brand-logo.png';

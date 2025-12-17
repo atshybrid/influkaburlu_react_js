@@ -20,6 +20,18 @@
 		<meta name="twitter:description" content="Find high‑fit creators, streamline workflows, and prove ROAS." />
 		<meta name="twitter:image" content="/assets/brand-logo.png" />
 
+		<!-- Organization schema (helps Google/Gemini understand the brand) -->
+		<script type="application/ld+json">
+			{
+				"@context": "https://schema.org",
+				"@type": "Organization",
+				"name": "%VITE_APP_NAME%",
+				"url": "%VITE_FRONTEND_URL%",
+				"logo": "%VITE_FRONTEND_URL%/assets/brand-logo.png",
+				"description": "Influencer marketing and brand collaboration platform"
+			}
+		</script>
+
 		<!-- Analytics (loaded only when IDs are set) -->
 		<script>
 			(function () {

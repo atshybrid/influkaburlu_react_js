@@ -52,7 +52,7 @@ export default function PublicInfluencerCard({
   const handleText = rawHandle ? (String(rawHandle).startsWith('@') ? String(rawHandle) : `@${rawHandle}`) : '@myhandle';
   const nameText = influencer?.name || 'Demo Influencer';
   const slug = (influencer?.slug || String(rawHandle || '').replace(/^@/, '')).toString();
-  const profileTo = slug ? `/influencer/${encodeURIComponent(slug)}` : null;
+  const profileTo = slug ? `/creators/${encodeURIComponent(slug)}` : null;
   const profilePicUrl = influencer?.profilePicUrl || '';
   const avatarSrc = profilePicUrl || '/assets/brand-logo.png';
   const verificationStatus = influencer?.verificationStatus;

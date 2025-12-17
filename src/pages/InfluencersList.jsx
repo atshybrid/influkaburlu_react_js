@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import PublicInfluencerCard from '../components/PublicInfluencerCard';
 import { apiClient } from '../utils/apiClient';
 import SeoHead from '../components/SeoHead';
@@ -7,12 +7,53 @@ import useSeoPage from '../hooks/useSeoPage';
 
 export default function InfluencersList() {
   const { seo } = useSeoPage('influencers');
+  const location = useLocation();
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState('');
   const [offset, setOffset] = React.useState(0);
   const limit = 30;
+
+  const baseUrl = (import.meta.env.VITE_FRONTEND_URL || '').toString().replace(/\/+$/, '');
+  const canonicalCreators = baseUrl ? `${baseUrl}/creators` : '';
+
+  const schema = React.useMemo(() => {
+    if (!baseUrl) return null;
+    const breadcrumb = {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${baseUrl}/` },
+        { '@type': 'ListItem', position: 2, name: 'Creators', item: `${baseUrl}/creators` },
+      ],
+    };
+
+    const listItems = (Array.isArray(items) ? items : []).slice(0, 30).map((inf, idx) => {
+      const rawHandle = (inf?.slug || inf?.handle || inf?.handleDisplay || '').toString().replace(/^@/, '');
+      const slug = rawHandle;
+      const url = slug ? `${baseUrl}/creators/${encodeURIComponent(slug)}` : '';
+      const name = (inf?.name || inf?.displayName || 'Creator').toString();
+      const image = (inf?.profilePicUrl || '').toString().trim();
+      return {
+        '@type': 'ListItem',
+        position: idx + 1,
+        url,
+        name,
+        image: image || undefined,
+      };
+    }).filter((x) => x.url);
+
+    const itemList = {
+      '@type': 'ItemList',
+      name: 'Creators',
+      itemListElement: listItems,
+    };
+
+    return {
+      '@context': 'https://schema.org',
+      '@graph': [breadcrumb, itemList],
+    };
+  }, [baseUrl, items]);
 
   const loadPage = React.useCallback(async (nextOffset, { append } = { append: false }) => {
     const res = await apiClient.request(`/public/influencers?limit=${limit}&offset=${nextOffset}`, {
@@ -66,9 +107,9 @@ export default function InfluencersList() {
         title={seo?.title || 'All creators'}
         description={seo?.description || ''}
         keywords={seo?.keywords || ''}
-        canonical={seo?.canonical || ''}
+        canonical={seo?.canonical || canonicalCreators || ''}
         ogImage={seo?.ogImage || ''}
-        schema={seo?.schema || null}
+        schema={seo?.schema || schema || null}
         noindex={seo?.indexed === false}
       />
       <div className="flex items-end justify-between gap-4">

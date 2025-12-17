@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     return 'https://influapi.kaburlumedia.com/api';
   })();
 
-  const staticRoutes = ['/', '/influencers', '/brands', '/ads'];
+  const staticRoutes = ['/', '/creators', '/about', '/contact', '/privacy-policy', '/terms', '/brands', '/ads', '/get-started'];
 
   const now = new Date().toISOString();
 
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
 
       for (const slug of slugs) {
         urls.push({
-          loc: `${frontendBase}/influencer/${encodeURIComponent(slug)}`,
+          loc: `${frontendBase}/creators/${encodeURIComponent(slug)}`,
           lastmod: now,
           changefreq: 'weekly',
           priority: 0.9,
