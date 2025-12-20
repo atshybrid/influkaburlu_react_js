@@ -51,7 +51,11 @@ export default function Navbar() {
             <Link to="/login" className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm hover:bg-gray-50">Login</Link>
           ) : (
             <>
-              {role === 'influencer' ? (
+              {role === 'superadmin' ? (
+                <Link to="/super-admin" className="px-3 py-2 rounded-md text-sm bg-gray-900 text-white">Super Admin</Link>
+              ) : role === 'admin' ? (
+                <Link to="/admin" className="px-3 py-2 rounded-md text-sm bg-gray-900 text-white">Admin</Link>
+              ) : role === 'influencer' ? (
                 <Link to="/dashboard-influencer" className="px-3 py-2 rounded-md text-sm bg-gray-900 text-white">My Dashboard</Link>
               ) : (
                 <Link to="/dashboard-advertiser" className="px-3 py-2 rounded-md text-sm bg-gray-900 text-white">My Dashboard</Link>

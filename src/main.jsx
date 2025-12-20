@@ -16,6 +16,7 @@ import DashboardInfluencer from './pages/DashboardInfluencer';
 import DashboardAdvertiser from './pages/DashboardAdvertiser';
 import Referral from './pages/Referral';
 import Admin from './pages/Admin';
+import SuperAdmin from './pages/SuperAdmin';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -56,6 +57,7 @@ function App(){
 						<Route path="/dashboard-influencer" element={<RequireAuth role="influencer"><DashboardInfluencer/></RequireAuth>} />
 						<Route path="/dashboard-advertiser" element={<RequireAuth role="advertiser"><DashboardAdvertiser/></RequireAuth>} />
 						<Route path="/admin" element={<Admin/>} />
+						<Route path="/super-admin" element={<RequireAuth role="superadmin" title="Super Admin"><SuperAdmin/></RequireAuth>} />
 					</Routes>
 				</div>
 				<Footer />
@@ -68,22 +70,34 @@ createRoot(document.getElementById('root')).render(<App />);
 
 export default App;
 
-function RequireAuth({ children, role }){
+function RequireAuth({ children, role, title }){
 	const token = localStorage.getItem('auth.token');
 	const user = safeParse(localStorage.getItem('auth.user'));
 	const userRole = normalizeRole(user?.role);
 	const tokenRole = normalizeRole(getRoleFromToken(token));
 	const effectiveRole = userRole || tokenRole;
-	const okRole = role ? effectiveRole === role : true;
+	const okRole = (() => {
+		if (!role) return true;
+		if (Array.isArray(role)) return role.includes(effectiveRole);
+		return effectiveRole === role;
+	})();
 	if (!token || (role && !okRole)) {
 		const next = window.location.pathname + window.location.search;
 		window.location.replace(`/login?next=${encodeURIComponent(next)}`);
 		return null;
 	}
-	const title = role === 'influencer' ? 'Influencer Dashboard' : role === 'advertiser' ? 'Advertiser Dashboard' : 'Dashboard';
+	const resolvedTitle =
+		title ||
+		(role === 'influencer'
+			? 'Influencer Dashboard'
+			: role === 'advertiser'
+				? 'Advertiser Dashboard'
+				: role === 'superadmin'
+					? 'Super Admin Dashboard'
+					: 'Dashboard');
 	return (
 		<>
-			<SeoHead title={title} noindex />
+			<SeoHead title={resolvedTitle} noindex />
 			{children}
 		</>
 	);

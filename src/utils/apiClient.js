@@ -87,6 +87,9 @@ export function normalizeRole(role) {
   if (r === 'brand') return 'advertiser';
   if (r === 'business') return 'advertiser';
   if (r === 'creator') return 'influencer';
+  if (r === 'super_admin') return 'superadmin';
+  if (r === 'super-admin') return 'superadmin';
+  if (r === 'super admin') return 'superadmin';
   return r;
 }
 
