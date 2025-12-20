@@ -47,7 +47,8 @@ export default function SeoHead({
     if (c) return c;
     if (typeof window === 'undefined') return baseUrl;
     if (!baseUrl) return '';
-    return `${baseUrl}${window.location.pathname}${window.location.search}`;
+    // Avoid canonicalizing tracking params (utm, etc.) by default.
+    return `${baseUrl}${window.location.pathname}`;
   })();
 
   const resolvedOgImage = (() => {
@@ -74,6 +75,7 @@ export default function SeoHead({
       <meta property="og:title" content={resolvedTitle} />
       {resolvedDescription && <meta property="og:description" content={resolvedDescription} />}
       <meta property="og:type" content={ogType} />
+      <meta property="og:site_name" content={import.meta.env.VITE_APP_NAME || 'Influ Kaburlu'} />
       {resolvedOgUrl && <meta property="og:url" content={resolvedOgUrl} />}
       {resolvedOgImage && <meta property="og:image" content={resolvedOgImage} />}
 

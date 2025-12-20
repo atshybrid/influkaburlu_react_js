@@ -101,7 +101,7 @@ function replaceRoot(html, innerHtml) {
   return html.replace('<div id="root"></div>', `<div id="root">${innerHtml}</div>`);
 }
 
-function writePage(routePath, { title, description, canonical, ogImage, schema, bodyHtml, windowData } = {}) {
+function writePage(routePath, { title, description, canonical, ogImage, ogType = 'website', schema, bodyHtml, windowData } = {}) {
   const cleanRoute = routePath.replace(/^\//, '').replace(/\/+$/, '');
   const outDir = cleanRoute ? path.join(distDir, cleanRoute) : distDir;
   ensureDir(outDir);
@@ -119,7 +119,7 @@ function writePage(routePath, { title, description, canonical, ogImage, schema, 
 
   html = upsertMetaByProperty(html, 'og:title', title || '');
   if (resolvedDescription) html = upsertMetaByProperty(html, 'og:description', resolvedDescription);
-  html = upsertMetaByProperty(html, 'og:type', 'profile');
+  html = upsertMetaByProperty(html, 'og:type', ogType);
   if (resolvedCanonical) html = upsertMetaByProperty(html, 'og:url', resolvedCanonical);
   html = upsertMetaByProperty(html, 'og:image', resolvedOgImage);
 
@@ -347,6 +347,7 @@ async function prerenderInfluencers() {
       description,
       canonical: canonicalUrl,
       ogImage: image || '/assets/brand-logo.png',
+      ogType: 'profile',
       schema,
       bodyHtml,
       windowData: { slug, data: detail },
@@ -358,6 +359,7 @@ async function prerenderInfluencers() {
       description,
       canonical: canonicalUrl,
       ogImage: image || '/assets/brand-logo.png',
+      ogType: 'profile',
       schema,
       bodyHtml,
       windowData: { slug, data: detail },

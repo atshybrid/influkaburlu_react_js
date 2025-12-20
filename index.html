@@ -3,32 +3,46 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0" />
-		<title>Influ Kaburlu</title>
+		<title>%VITE_APP_NAME%</title>
 		<!-- Favicon and SEO -->
 		<link rel="icon" type="image/png" href="/assets/brand-logo.png" />
 		<link rel="apple-touch-icon" href="/assets/brand-logo.png" />
 		<meta name="theme-color" content="#f97316" />
-		<meta name="description" content="Influ Kaburlu — the best place for influencer collaboration and native creator ads. Find high‑fit creators, streamline workflows, and measure real ROAS." />
+		<meta name="description" content="%VITE_DEFAULT_META_DESCRIPTION%" />
+		<link rel="canonical" href="%VITE_FRONTEND_URL%/" />
 		<meta name="google-site-verification" content="%VITE_PUBLIC_GOOGLE_SITE_VERIFICATION%" />
-		<meta property="og:title" content="Influ Kaburlu — Influencer Collaboration & Native Ads" />
-		<meta property="og:description" content="Discover creators your audience already loves. Launch native ads and measure real conversions." />
+		<meta property="og:title" content="%VITE_APP_NAME%" />
+		<meta property="og:description" content="%VITE_DEFAULT_META_DESCRIPTION%" />
 		<meta property="og:type" content="website" />
-		<meta property="og:image" content="/assets/brand-logo.png" />
+		<meta property="og:site_name" content="%VITE_APP_NAME%" />
+		<meta property="og:image" content="%VITE_FRONTEND_URL%/assets/brand-logo.png" />
 		<meta property="og:url" content="%VITE_FRONTEND_URL%" />
 		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="twitter:title" content="Influ Kaburlu — Influencer Collaboration & Native Ads" />
-		<meta name="twitter:description" content="Find high‑fit creators, streamline workflows, and prove ROAS." />
-		<meta name="twitter:image" content="/assets/brand-logo.png" />
+		<meta name="twitter:title" content="%VITE_APP_NAME%" />
+		<meta name="twitter:description" content="%VITE_DEFAULT_META_DESCRIPTION%" />
+		<meta name="twitter:image" content="%VITE_FRONTEND_URL%/assets/brand-logo.png" />
 
-		<!-- Organization schema (helps Google/Gemini understand the brand) -->
+		<!-- Organization + Website schema (helps Google understand the brand) -->
 		<script type="application/ld+json">
 			{
 				"@context": "https://schema.org",
-				"@type": "Organization",
-				"name": "%VITE_APP_NAME%",
-				"url": "%VITE_FRONTEND_URL%",
-				"logo": "%VITE_FRONTEND_URL%/assets/brand-logo.png",
-				"description": "Influencer marketing and brand collaboration platform"
+				"@graph": [
+					{
+						"@type": "Organization",
+						"@id": "%VITE_FRONTEND_URL%/#organization",
+						"name": "%VITE_APP_NAME%",
+						"url": "%VITE_FRONTEND_URL%",
+						"logo": "%VITE_FRONTEND_URL%/assets/brand-logo.png",
+						"description": "%VITE_DEFAULT_META_DESCRIPTION%"
+					},
+					{
+						"@type": "WebSite",
+						"@id": "%VITE_FRONTEND_URL%/#website",
+						"url": "%VITE_FRONTEND_URL%/",
+						"name": "%VITE_APP_NAME%",
+						"publisher": { "@id": "%VITE_FRONTEND_URL%/#organization" }
+					}
+				]
 			}
 		</script>
 
