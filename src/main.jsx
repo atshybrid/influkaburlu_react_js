@@ -14,6 +14,7 @@ import PublicInfluencerProfile from './pages/PublicInfluencerProfile';
 import InfluencersList from './pages/InfluencersList';
 import DashboardInfluencer from './pages/DashboardInfluencer';
 import DashboardAdvertiser from './pages/DashboardAdvertiser';
+import Referral from './pages/Referral';
 import Admin from './pages/Admin';
 import About from './pages/About';
 import Contact from './pages/Contact';
@@ -49,6 +50,7 @@ function App(){
 						<Route path="/contact" element={<Contact/>} />
 						<Route path="/privacy-policy" element={<PrivacyPolicy/>} />
 						<Route path="/terms" element={<Terms/>} />
+						<Route path="/referral" element={<Referral/>} />
 						<Route path="/dashboard/influencer" element={<RequireAuth role="influencer"><DashboardInfluencer/></RequireAuth>} />
 						<Route path="/dashboard/advertiser" element={<RequireAuth role="advertiser"><DashboardAdvertiser/></RequireAuth>} />
 						<Route path="/dashboard-influencer" element={<RequireAuth role="influencer"><DashboardInfluencer/></RequireAuth>} />

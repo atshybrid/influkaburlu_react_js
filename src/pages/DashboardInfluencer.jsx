@@ -92,6 +92,115 @@ export default function DashboardInfluencer(){
   const [pricingOtherName, setPricingOtherName] = useState('');
   const [pricingNewAmount, setPricingNewAmount] = useState('');
 
+  // Photoshoot requests
+  const [psLoading, setPsLoading] = useState(false);
+  const [psError, setPsError] = useState('');
+  const [psMessage, setPsMessage] = useState('');
+  const [psTotal, setPsTotal] = useState(0);
+  const [psLimit, setPsLimit] = useState(20);
+  const [psOffset, setPsOffset] = useState(0);
+  const [psItems, setPsItems] = useState([]);
+  const [psBooking, setPsBooking] = useState(false);
+  const [psBookError, setPsBookError] = useState('');
+  const [psBookMessage, setPsBookMessage] = useState('');
+  const [psBookForm, setPsBookForm] = useState({
+    requestedTimezone: 'Asia/Kolkata',
+    requestedStartAtLocal: '',
+    requestedEndAtLocal: '',
+    influencerAppointmentDetails: {
+      personal: {
+        fullName: '',
+        city: '',
+        gender: '',
+        bodyType: '',
+        skinTone: '',
+      },
+      bodyMeasurements: {
+        heightCm: '',
+        shoeSize: '',
+      },
+      dressDetails: {
+        topSize: '',
+        bottomSize: '',
+        dressSize: '',
+        preferredFit: '',
+        preferredDressingStyleCsv: '',
+        westernWearTypeCsv: '',
+        preferredOutfitColorsCsv: '',
+      },
+      shootPreferences: {
+        shootStyleCsv: '',
+        poseComfortLevel: '',
+        boldnessLevel: '',
+        sleevelessAllowed: true,
+        cameraFacingComfort: true,
+        shootTypeCsv: '',
+      },
+      stylingPermissions: {
+        makeupPreference: '',
+        accessoriesAllowed: true,
+      },
+      editingAndUsage: {
+        usagePermissionCsv: '',
+        photoshopBrandingAllowed: true,
+      },
+      consent: {
+        publicDisplayConsent: true,
+        termsAccepted: true,
+        date: new Date().toISOString().slice(0, 10),
+      },
+    },
+  });
+
+  // Referral
+  const [refSummaryLoading, setRefSummaryLoading] = useState(false);
+  const [refLedgerLoading, setRefLedgerLoading] = useState(false);
+  const [refInviteLoading, setRefInviteLoading] = useState(false);
+  const [refApplyLoading, setRefApplyLoading] = useState(false);
+  const [refError, setRefError] = useState('');
+  const [refMessage, setRefMessage] = useState('');
+  const [refSummary, setRefSummary] = useState(null);
+  const [refLedger, setRefLedger] = useState({ total: 0, limit: 20, offset: 0, items: [] });
+  const [refInviteForm, setRefInviteForm] = useState({ phone: '', receiverName: '' });
+  const [refInviteResult, setRefInviteResult] = useState(null);
+  const [refApplyCode, setRefApplyCode] = useState('');
+  const pendingReferralApplyOnceRef = useRef(false);
+
+  // Social reach (followers + links)
+  const [reachSaving, setReachSaving] = useState(false);
+  const [reachMessage, setReachMessage] = useState('');
+  const [reachError, setReachError] = useState('');
+  const reachInitializedRef = useRef(false);
+  const [reachForm, setReachForm] = useState({
+    followers: {
+      instagram: '',
+      youtube: '',
+      tiktok: '',
+      facebook: '',
+      x: '',
+      snapchat: '',
+      linkedin: '',
+      pinterest: '',
+      threads: '',
+      telegram: '',
+      websiteMonthlyVisitors: '',
+      engagementRate: '',
+    },
+    socialLinks: {
+      instagram: '',
+      youtube: '',
+      tiktok: '',
+      facebook: '',
+      x: '',
+      snapchat: '',
+      linkedin: '',
+      pinterest: '',
+      threads: '',
+      telegram: '',
+      website: '',
+    },
+  });
+
   const [showAllProfile, setShowAllProfile] = useState(false);
 
   const scrollMediaRow = (dir) => {
@@ -126,6 +235,31 @@ export default function DashboardInfluencer(){
           setMedia(arr);
         }
 
+        // If a referral code was stashed pre-login, try applying it once.
+        if (!pendingReferralApplyOnceRef.current) {
+          pendingReferralApplyOnceRef.current = true;
+          const pendingCodeRaw = (() => {
+            try { return localStorage.getItem('pending_referral_code'); } catch { return ''; }
+          })();
+          const pendingCode = normalizeReferralCode(pendingCodeRaw);
+          if (pendingCode) {
+            try {
+              await apiClient.request('/influencers/me/referral/apply', {
+                method: 'POST',
+                body: JSON.stringify({ code: pendingCode }),
+              });
+              try { localStorage.removeItem('pending_referral_code'); } catch {}
+              setRefMessage('Referral code applied successfully.');
+              loadReferralSummary().catch(() => {});
+              loadReferralLedger({ limit: refLedger?.limit || 20, offset: 0 }).catch(() => {});
+            } catch (e) {
+              // Keep the pending code so user can retry manually.
+              setRefApplyCode(pendingCode);
+              setRefError(e?.message || 'Failed to apply referral code.');
+            }
+          }
+        }
+
         // Prefetch compliance summaries so the top card can show status chips.
         // These only update state; full forms remain in tabs.
         loadKyc().catch(() => {});
@@ -141,6 +275,327 @@ export default function DashboardInfluencer(){
     })();
     return () => { mounted = false; };
   }, []);
+
+  async function loadPhotoshootRequests(next = {}) {
+    const limit = Number.isFinite(Number(next.limit)) ? Number(next.limit) : psLimit;
+    const offset = Number.isFinite(Number(next.offset)) ? Number(next.offset) : psOffset;
+    setPsLoading(true);
+    setPsError('');
+    setPsMessage('');
+    try {
+      const qs = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+      const res = await apiClient.request(`/influencers/me/photoshoots/requests?${qs.toString()}`, { method: 'GET' });
+      setPsTotal(Number(res?.total) || 0);
+      setPsLimit(Number(res?.limit) || limit);
+      setPsOffset(Number(res?.offset) || offset);
+      setPsItems(Array.isArray(res?.items) ? res.items : []);
+    } catch (e) {
+      setPsError(e?.message || 'Failed to load photoshoot requests.');
+    } finally {
+      setPsLoading(false);
+    }
+  }
+
+  async function bookLatestPhotoshoot() {
+    setPsBooking(true);
+    setPsBookError('');
+    setPsBookMessage('');
+    try {
+      const toIsoOrNull = (local) => {
+        const t = (local || '').toString().trim();
+        if (!t) return null;
+        const d = new Date(t);
+        if (Number.isNaN(d.getTime())) return null;
+        return d.toISOString();
+      };
+      const csvToArr = (v) => {
+        const t = (v || '').toString().trim();
+        if (!t) return [];
+        return t.split(',').map((x) => x.trim()).filter(Boolean);
+      };
+      const toNumOrUndef = (v) => {
+        const n = Number((v || '').toString().trim());
+        if (!Number.isFinite(n)) return undefined;
+        return n;
+      };
+
+      const requestedStartAt = toIsoOrNull(psBookForm.requestedStartAtLocal);
+      const requestedEndAt = toIsoOrNull(psBookForm.requestedEndAtLocal);
+      if (!requestedStartAt || !requestedEndAt) {
+        throw new Error('Please select requested start and end time.');
+      }
+
+      const d = psBookForm.influencerAppointmentDetails;
+      const payload = {
+        requestedTimezone: (psBookForm.requestedTimezone || 'Asia/Kolkata').toString(),
+        requestedStartAt,
+        requestedEndAt,
+        details: {
+          influencerAppointmentDetails: {
+            personal: {
+              fullName: (d.personal.fullName || '').toString(),
+              city: (d.personal.city || '').toString(),
+              gender: (d.personal.gender || '').toString(),
+              bodyType: (d.personal.bodyType || '').toString(),
+              skinTone: (d.personal.skinTone || '').toString(),
+            },
+            bodyMeasurements: {
+              heightCm: toNumOrUndef(d.bodyMeasurements.heightCm),
+              shoeSize: toNumOrUndef(d.bodyMeasurements.shoeSize),
+            },
+            dressDetails: {
+              topSize: (d.dressDetails.topSize || '').toString(),
+              bottomSize: (d.dressDetails.bottomSize || '').toString(),
+              dressSize: (d.dressDetails.dressSize || '').toString(),
+              preferredFit: (d.dressDetails.preferredFit || '').toString(),
+              preferredDressingStyle: csvToArr(d.dressDetails.preferredDressingStyleCsv),
+              westernWearType: csvToArr(d.dressDetails.westernWearTypeCsv),
+              preferredOutfitColors: csvToArr(d.dressDetails.preferredOutfitColorsCsv),
+            },
+            shootPreferences: {
+              shootStyle: csvToArr(d.shootPreferences.shootStyleCsv),
+              poseComfortLevel: (d.shootPreferences.poseComfortLevel || '').toString(),
+              boldnessLevel: (d.shootPreferences.boldnessLevel || '').toString(),
+              sleevelessAllowed: !!d.shootPreferences.sleevelessAllowed,
+              cameraFacingComfort: !!d.shootPreferences.cameraFacingComfort,
+              shootType: csvToArr(d.shootPreferences.shootTypeCsv),
+            },
+            stylingPermissions: {
+              makeupPreference: (d.stylingPermissions.makeupPreference || '').toString(),
+              accessoriesAllowed: !!d.stylingPermissions.accessoriesAllowed,
+            },
+            editingAndUsage: {
+              usagePermission: csvToArr(d.editingAndUsage.usagePermissionCsv),
+              photoshopBrandingAllowed: !!d.editingAndUsage.photoshopBrandingAllowed,
+            },
+            consent: {
+              publicDisplayConsent: !!d.consent.publicDisplayConsent,
+              termsAccepted: !!d.consent.termsAccepted,
+              date: (d.consent.date || '').toString(),
+            },
+          },
+        },
+      };
+
+      await apiClient.request('/influencers/me/photoshoots/requests/book-latest', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setPsBookMessage('Photoshoot request submitted.');
+      await loadPhotoshootRequests({ limit: psLimit, offset: 0 });
+    } catch (e) {
+      setPsBookError(e?.message || 'Failed to book photoshoot.');
+    } finally {
+      setPsBooking(false);
+    }
+  }
+
+  function normalizePhoneDigits(value) {
+    const digits = (value || '').toString().replace(/[^0-9]/g, '');
+    // Frontend rule (India default): if user enters 10 digits, send as-is.
+    if (digits.length === 10) return digits;
+    return digits;
+  }
+
+  function normalizeReferralCode(value) {
+    return (value || '').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+  }
+
+  async function loadReferralSummary() {
+    setRefSummaryLoading(true);
+    setRefError('');
+    setRefMessage('');
+    try {
+      const res = await apiClient.request('/influencers/me/referral', { method: 'GET' });
+      setRefSummary(res || null);
+    } catch (e) {
+      setRefError(e?.message || 'Failed to load referral info.');
+    } finally {
+      setRefSummaryLoading(false);
+    }
+  }
+
+  async function loadReferralLedger(next = {}) {
+    const limit = Number.isFinite(Number(next.limit)) ? Number(next.limit) : (Number(refLedger?.limit) || 20);
+    const offset = Number.isFinite(Number(next.offset)) ? Number(next.offset) : (Number(refLedger?.offset) || 0);
+    setRefLedgerLoading(true);
+    setRefError('');
+    setRefMessage('');
+    try {
+      const qs = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+      const res = await apiClient.request(`/influencers/me/referral/ledger?${qs.toString()}`, { method: 'GET' });
+      setRefLedger({
+        total: Number(res?.total) || 0,
+        limit: Number(res?.limit) || limit,
+        offset: Number(res?.offset) || offset,
+        items: Array.isArray(res?.items) ? res.items : [],
+      });
+    } catch (e) {
+      setRefError(e?.message || 'Failed to load referral ledger.');
+    } finally {
+      setRefLedgerLoading(false);
+    }
+  }
+
+  async function inviteReferral() {
+    setRefInviteLoading(true);
+    setRefError('');
+    setRefMessage('');
+    try {
+      const phone = normalizePhoneDigits(refInviteForm.phone);
+      const receiverName = (refInviteForm.receiverName || '').toString().trim();
+      if (!phone) throw new Error('Please enter mobile number.');
+      if (!receiverName) throw new Error('Please enter name.');
+
+      const res = await apiClient.request('/influencers/me/referral/invite', {
+        method: 'POST',
+        body: JSON.stringify({ phone, receiverName }),
+      });
+      setRefInviteResult(res || null);
+      setRefMessage('Invite sent successfully.');
+      // Refresh summary/ledger to show changes if any.
+      loadReferralSummary().catch(() => {});
+      loadReferralLedger({ limit: refLedger?.limit || 20, offset: 0 }).catch(() => {});
+    } catch (e) {
+      setRefError(e?.message || 'Failed to send invite.');
+    } finally {
+      setRefInviteLoading(false);
+    }
+  }
+
+  async function applyReferral() {
+    setRefApplyLoading(true);
+    setRefError('');
+    setRefMessage('');
+    try {
+      const code = normalizeReferralCode(refApplyCode);
+      if (!code) throw new Error('Please enter referral code.');
+      await apiClient.request('/influencers/me/referral/apply', {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+      });
+      setRefMessage('Referral code applied successfully.');
+      loadReferralSummary().catch(() => {});
+      loadReferralLedger({ limit: refLedger?.limit || 20, offset: 0 }).catch(() => {});
+    } catch (e) {
+      setRefError(e?.message || 'Failed to apply referral code.');
+    } finally {
+      setRefApplyLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    // Initialize Social Reach form once from server profile.
+    if (!me || reachInitializedRef.current) return;
+    const f = (me?.followers && typeof me.followers === 'object') ? me.followers : {};
+    const s = (me?.socialLinks && typeof me.socialLinks === 'object') ? me.socialLinks : {};
+    setReachForm({
+      followers: {
+        instagram: f.instagram != null ? String(f.instagram) : '',
+        youtube: f.youtube != null ? String(f.youtube) : '',
+        tiktok: f.tiktok != null ? String(f.tiktok) : '',
+        facebook: f.facebook != null ? String(f.facebook) : '',
+        x: f.x != null ? String(f.x) : '',
+        snapchat: f.snapchat != null ? String(f.snapchat) : '',
+        linkedin: f.linkedin != null ? String(f.linkedin) : '',
+        pinterest: f.pinterest != null ? String(f.pinterest) : '',
+        threads: f.threads != null ? String(f.threads) : '',
+        telegram: f.telegram != null ? String(f.telegram) : '',
+        websiteMonthlyVisitors: f.websiteMonthlyVisitors != null ? String(f.websiteMonthlyVisitors) : '',
+        engagementRate: f.engagementRate != null ? String(f.engagementRate) : '',
+      },
+      socialLinks: {
+        instagram: s.instagram != null ? String(s.instagram) : '',
+        youtube: s.youtube != null ? String(s.youtube) : '',
+        tiktok: s.tiktok != null ? String(s.tiktok) : '',
+        facebook: s.facebook != null ? String(s.facebook) : '',
+        x: s.x != null ? String(s.x) : '',
+        snapchat: s.snapchat != null ? String(s.snapchat) : '',
+        linkedin: s.linkedin != null ? String(s.linkedin) : '',
+        pinterest: s.pinterest != null ? String(s.pinterest) : '',
+        threads: s.threads != null ? String(s.threads) : '',
+        telegram: s.telegram != null ? String(s.telegram) : '',
+        website: s.website != null ? String(s.website) : '',
+      },
+    });
+    reachInitializedRef.current = true;
+  }, [me]);
+
+  async function saveReach() {
+    setReachSaving(true);
+    setReachError('');
+    setReachMessage('');
+    try {
+      const toNonNegativeInt = (v) => {
+        const n = Number(String(v || '').replace(/[^0-9]/g, ''));
+        if (!Number.isFinite(n)) return undefined;
+        if (n < 0) return undefined;
+        return Math.floor(n);
+      };
+      const toNonNegativeFloat = (v) => {
+        const n = Number(String(v || '').trim());
+        if (!Number.isFinite(n)) return undefined;
+        if (n < 0) return undefined;
+        return n;
+      };
+      const trimOrUndef = (v) => {
+        const t = (v || '').toString().trim();
+        return t ? t : undefined;
+      };
+
+      const followers = {};
+      const f = reachForm?.followers || {};
+      const intKeys = ['instagram','youtube','tiktok','facebook','x','snapchat','linkedin','pinterest','threads','telegram','websiteMonthlyVisitors'];
+      for (const k of intKeys) {
+        const parsed = toNonNegativeInt(f[k]);
+        if (parsed != null) followers[k] = parsed;
+      }
+      const er = toNonNegativeFloat(f.engagementRate);
+      if (er != null) followers.engagementRate = er;
+
+      const socialLinks = {};
+      const s = reachForm?.socialLinks || {};
+      const linkKeys = ['instagram','youtube','tiktok','facebook','x','snapchat','linkedin','pinterest','threads','telegram','website'];
+      for (const k of linkKeys) {
+        const t = trimOrUndef(s[k]);
+        if (t != null) socialLinks[k] = t;
+      }
+
+      // Use a safe update payload (include commonly-used profile fields) so we don't accidentally wipe them.
+      const countryId = me?.countryId || me?.country?.id;
+      const stateIds = Array.isArray(me?.stateIds) ? me.stateIds : (me?.stateId != null ? [me.stateId] : []);
+      const payload = {
+        handle: me?.handle || '',
+        bio: me?.bio || '',
+        addressLine1: me?.addressLine1 || '',
+        addressLine2: me?.addressLine2 || '',
+        postalCode: me?.postalCode || '',
+        countryId: countryId != null && String(countryId) !== '' ? Number(countryId) : undefined,
+        stateIds: (stateIds || []).map((x) => Number(x)).filter((x) => Number.isFinite(x)),
+        districtId: me?.districtId != null && String(me.districtId) !== '' ? Number(me.districtId) : undefined,
+        languages: Array.isArray(me?.languages) ? me.languages : [],
+        socialLinks: {
+          ...(me?.socialLinks && typeof me.socialLinks === 'object' ? me.socialLinks : {}),
+          ...socialLinks,
+        },
+        followers: {
+          ...(me?.followers && typeof me.followers === 'object' ? me.followers : {}),
+          ...followers,
+        },
+      };
+
+      const res = await apiClient.request('/influencers/me', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      setMe(res || me);
+      setReachMessage('Social reach saved successfully.');
+    } catch (e) {
+      setReachError(e?.message || 'Failed to save social reach.');
+    } finally {
+      setReachSaving(false);
+    }
+  }
 
   async function loadKyc() {
     setKycLoading(true);
@@ -545,6 +1000,27 @@ export default function DashboardInfluencer(){
               <div className="mt-5 flex flex-wrap gap-2">
                 <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>Overview</TabButton>
                 <TabButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')}>Profile</TabButton>
+                <TabButton active={activeTab === 'reach'} onClick={() => setActiveTab('reach')}>Social Reach</TabButton>
+                <TabButton
+                  active={activeTab === 'photoshoot'}
+                  onClick={() => {
+                    setActiveTab('photoshoot');
+                    if (psItems.length === 0 && !psLoading) loadPhotoshootRequests({ limit: psLimit, offset: 0 });
+                  }}
+                >
+                  Photoshoot
+                </TabButton>
+
+                <TabButton
+                  active={activeTab === 'referral'}
+                  onClick={() => {
+                    setActiveTab('referral');
+                    if (!refSummary && !refSummaryLoading) loadReferralSummary();
+                    if (!refLedgerLoading && (refLedger?.items || []).length === 0) loadReferralLedger({ limit: refLedger?.limit || 20, offset: 0 });
+                  }}
+                >
+                  Referral
+                </TabButton>
                 <TabButton active={activeTab === 'kyc'} onClick={() => setActiveTab('kyc')}>
                   <span className="inline-flex items-center gap-2">
                     KYC
@@ -680,6 +1156,11 @@ export default function DashboardInfluencer(){
                   <KeyValue k="YouTube" v={me?.socialLinks?.youtube || '—'} />
                   <KeyValue k="Instagram followers" v={me?.followers?.instagram != null ? String(me.followers.instagram) : '—'} />
                 </div>
+                <div className="mt-4">
+                  <button type="button" className="px-3 py-2 rounded-md text-xs font-medium text-white bg-gray-900" onClick={() => setActiveTab('reach')}>
+                    Edit social reach
+                  </button>
+                </div>
               </Panel>
 
               <Panel>
@@ -692,6 +1173,432 @@ export default function DashboardInfluencer(){
                   </div>
                 </div>
               </Panel>
+            </div>
+          )}
+
+          {activeTab === 'reach' && (
+            <div className="mt-6 grid lg:grid-cols-3 gap-6">
+              <Panel gradient>
+                <h2 className="font-semibold">Social Media Reach</h2>
+                <div className="mt-2 text-xs text-gray-600">Add follower counts and links so brands can trust your reach.</div>
+                {reachError && <div className="mt-3 text-xs text-red-600">{reachError}</div>}
+                {reachMessage && <div className="mt-3 text-xs text-emerald-700">{reachMessage}</div>}
+                <div className="mt-4 flex items-center gap-2">
+                  <button type="button" onClick={() => setReachForm((p) => ({
+                    ...p,
+                    followers: { ...p.followers, engagementRate: (p.followers.engagementRate || '').toString().replace(/[^0-9.]/g, '') },
+                  }))} className="hidden" />
+                  <button type="button" onClick={saveReach} disabled={reachSaving} className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-900 disabled:opacity-50">
+                    {reachSaving ? 'Saving…' : 'Save'}
+                  </button>
+                  <button type="button" onClick={() => setActiveTab('profile')} className="px-3 py-2 rounded-md text-sm bg-gray-100" disabled={reachSaving}>
+                    Back
+                  </button>
+                </div>
+              </Panel>
+
+              <div className="lg:col-span-2">
+                <Panel>
+                  <h2 className="font-semibold">Follower Counts</h2>
+                  <div className="mt-4 grid md:grid-cols-3 gap-4">
+                    {[
+                      ['instagram','Instagram'],
+                      ['youtube','YouTube'],
+                      ['tiktok','TikTok'],
+                      ['facebook','Facebook'],
+                      ['x','X'],
+                      ['snapchat','Snapchat'],
+                      ['linkedin','LinkedIn'],
+                      ['pinterest','Pinterest'],
+                      ['threads','Threads'],
+                      ['telegram','Telegram'],
+                    ].map(([key, label]) => (
+                      <label key={key} className="text-sm text-gray-700">
+                        {label}
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          inputMode="numeric"
+                          value={reachForm.followers[key]}
+                          onChange={(e)=>setReachForm((p)=>({ ...p, followers: { ...p.followers, [key]: e.target.value } }))}
+                          className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3 h-11"
+                          placeholder="0"
+                        />
+                      </label>
+                    ))}
+
+                    <label className="text-sm text-gray-700 md:col-span-2">
+                      Website monthly visitors
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        value={reachForm.followers.websiteMonthlyVisitors}
+                        onChange={(e)=>setReachForm((p)=>({ ...p, followers: { ...p.followers, websiteMonthlyVisitors: e.target.value } }))}
+                        className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3 h-11"
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label className="text-sm text-gray-700">
+                      Engagement rate (%)
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        inputMode="decimal"
+                        value={reachForm.followers.engagementRate}
+                        onChange={(e)=>setReachForm((p)=>({ ...p, followers: { ...p.followers, engagementRate: e.target.value } }))}
+                        className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3 h-11"
+                        placeholder="2.1"
+                      />
+                    </label>
+                  </div>
+
+                  <h3 className="mt-8 font-semibold">Social Links</h3>
+                  <div className="mt-4 grid md:grid-cols-2 gap-4">
+                    {[
+                      ['instagram','Instagram URL','https://instagram.com/…'],
+                      ['youtube','YouTube URL','https://youtube.com/@…'],
+                      ['tiktok','TikTok URL','https://tiktok.com/@…'],
+                      ['facebook','Facebook URL','https://facebook.com/…'],
+                      ['x','X URL','https://x.com/…'],
+                      ['snapchat','Snapchat URL','https://www.snapchat.com/add/…'],
+                      ['linkedin','LinkedIn URL','https://www.linkedin.com/in/…'],
+                      ['pinterest','Pinterest URL','https://www.pinterest.com/…'],
+                      ['threads','Threads URL','https://www.threads.net/@…'],
+                      ['telegram','Telegram URL','https://t.me/…'],
+                      ['website','Website','https://…'],
+                    ].map(([key, label, ph]) => (
+                      <label key={key} className="text-sm text-gray-700">
+                        {label}
+                        <input
+                          type="url"
+                          value={reachForm.socialLinks[key]}
+                          onChange={(e)=>setReachForm((p)=>({ ...p, socialLinks: { ...p.socialLinks, [key]: e.target.value } }))}
+                          className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 px-3 h-11"
+                          placeholder={ph}
+                        />
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-end">
+                    <button type="button" onClick={saveReach} disabled={reachSaving} className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-900 disabled:opacity-50">
+                      {reachSaving ? 'Saving…' : 'Save Social Reach'}
+                    </button>
+                  </div>
+                </Panel>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'photoshoot' && (
+            <div className="mt-6 grid lg:grid-cols-3 gap-6">
+              <Panel gradient>
+                <h2 className="font-semibold">Photoshoot Requests</h2>
+                <div className="mt-2 text-xs text-gray-600">Request a professional photoshoot slot.</div>
+                {psError && <div className="mt-3 text-xs text-red-600">{psError}</div>}
+                {psMessage && <div className="mt-3 text-xs text-emerald-700">{psMessage}</div>}
+                <div className="mt-4 flex items-center gap-2">
+                  <button type="button" onClick={() => loadPhotoshootRequests({ limit: psLimit, offset: psOffset })} disabled={psLoading} className="px-3 py-2 rounded-md text-sm bg-gray-100 disabled:opacity-50">
+                    {psLoading ? 'Loading…' : 'Refresh'}
+                  </button>
+                  <button type="button" onClick={() => loadPhotoshootRequests({ limit: psLimit, offset: Math.max(0, psOffset - psLimit) })} disabled={psLoading || psOffset <= 0} className="px-3 py-2 rounded-md text-sm bg-gray-100 disabled:opacity-50">
+                    Prev
+                  </button>
+                  <button type="button" onClick={() => loadPhotoshootRequests({ limit: psLimit, offset: psOffset + psLimit })} disabled={psLoading || (psOffset + psLimit) >= psTotal} className="px-3 py-2 rounded-md text-sm bg-gray-100 disabled:opacity-50">
+                    Next
+                  </button>
+                </div>
+                <div className="mt-3 text-xs text-gray-600">Showing {psItems.length} of {psTotal}.</div>
+              </Panel>
+
+              <div className="lg:col-span-2 space-y-6">
+                <Panel>
+                  <h2 className="font-semibold">View Requests</h2>
+                  <div className="mt-4 space-y-2">
+                    {psLoading && <div className="text-xs text-gray-600">Loading…</div>}
+                    {!psLoading && psItems.length === 0 && <div className="text-xs text-gray-600">No requests yet.</div>}
+                    {!psLoading && psItems.map((it) => (
+                      <div key={it.ulid} className="rounded-xl bg-gray-50 ring-1 ring-gray-200 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm font-medium text-gray-900">{it.status || '—'}</div>
+                          <div className="text-xs text-gray-600">{(it.createdAt || '').toString().slice(0, 10) || '—'}</div>
+                        </div>
+                        <div className="mt-1 text-xs text-gray-700">
+                          <div>ULID: <span className="text-gray-600">{it.ulid}</span></div>
+                          {it.scheduledStartAt && (
+                            <div>Scheduled: <span className="text-gray-600">{String(it.scheduledStartAt)}</span> → <span className="text-gray-600">{String(it.scheduledEndAt || '')}</span></div>
+                          )}
+                          {it.rejectReason && <div className="text-red-700">Reject: {it.rejectReason}</div>}
+                          {it.adminNotes && <div className="text-gray-600">Admin: {it.adminNotes}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+
+                <Panel>
+                  <h2 className="font-semibold">New Photoshoot Request</h2>
+                  <div className="mt-2 text-xs text-gray-600">Fill details and book the latest available slot.</div>
+                  {psBookError && <div className="mt-3 text-xs text-red-600">{psBookError}</div>}
+                  {psBookMessage && <div className="mt-3 text-xs text-emerald-700">{psBookMessage}</div>}
+
+                  <div className="mt-4 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700 md:col-span-1">Timezone
+                      <input value={psBookForm.requestedTimezone} onChange={(e)=>setPsBookForm(p=>({ ...p, requestedTimezone: e.target.value }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Asia/Kolkata" />
+                    </label>
+                    <label className="text-sm text-gray-700 md:col-span-1">Requested start
+                      <input type="datetime-local" value={psBookForm.requestedStartAtLocal} onChange={(e)=>setPsBookForm(p=>({ ...p, requestedStartAtLocal: e.target.value }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
+                    </label>
+                    <label className="text-sm text-gray-700 md:col-span-1">Requested end
+                      <input type="datetime-local" value={psBookForm.requestedEndAtLocal} onChange={(e)=>setPsBookForm(p=>({ ...p, requestedEndAtLocal: e.target.value }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
+                    </label>
+                  </div>
+
+                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Personal</h3>
+                  <div className="mt-3 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700">Full name
+                      <input value={psBookForm.influencerAppointmentDetails.personal.fullName} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, fullName: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
+                    </label>
+                    <label className="text-sm text-gray-700">City
+                      <input value={psBookForm.influencerAppointmentDetails.personal.city} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, city: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
+                    </label>
+                    <label className="text-sm text-gray-700">Gender
+                      <input value={psBookForm.influencerAppointmentDetails.personal.gender} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, gender: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="male/female/other" />
+                    </label>
+                    <label className="text-sm text-gray-700">Body type
+                      <input value={psBookForm.influencerAppointmentDetails.personal.bodyType} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, bodyType: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Athletic" />
+                    </label>
+                    <label className="text-sm text-gray-700">Skin tone
+                      <input value={psBookForm.influencerAppointmentDetails.personal.skinTone} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, skinTone: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Medium" />
+                    </label>
+                  </div>
+
+                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Body measurements</h3>
+                  <div className="mt-3 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700">Height (cm)
+                      <input type="number" min="0" value={psBookForm.influencerAppointmentDetails.bodyMeasurements.heightCm} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, bodyMeasurements: { ...p.influencerAppointmentDetails.bodyMeasurements, heightCm: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
+                    </label>
+                    <label className="text-sm text-gray-700">Shoe size
+                      <input type="number" min="0" value={psBookForm.influencerAppointmentDetails.bodyMeasurements.shoeSize} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, bodyMeasurements: { ...p.influencerAppointmentDetails.bodyMeasurements, shoeSize: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
+                    </label>
+                  </div>
+
+                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Dress details</h3>
+                  <div className="mt-3 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700">Top size
+                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.topSize} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, topSize: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="M" />
+                    </label>
+                    <label className="text-sm text-gray-700">Bottom size
+                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.bottomSize} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, bottomSize: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="M" />
+                    </label>
+                    <label className="text-sm text-gray-700">Dress size
+                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.dressSize} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, dressSize: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="M" />
+                    </label>
+                    <label className="text-sm text-gray-700">Preferred fit
+                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.preferredFit} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, preferredFit: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Regular" />
+                    </label>
+                    <label className="text-sm text-gray-700 md:col-span-2">Preferred dressing style (comma separated)
+                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.preferredDressingStyleCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, preferredDressingStyleCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Western" />
+                    </label>
+                    <label className="text-sm text-gray-700 md:col-span-2">Western wear type (comma separated)
+                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.westernWearTypeCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, westernWearTypeCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Jeans & Top" />
+                    </label>
+                    <label className="text-sm text-gray-700 md:col-span-2">Preferred outfit colors (comma separated)
+                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.preferredOutfitColorsCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, preferredOutfitColorsCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Black" />
+                    </label>
+                  </div>
+
+                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Shoot preferences</h3>
+                  <div className="mt-3 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700 md:col-span-2">Shoot style (comma separated)
+                      <input value={psBookForm.influencerAppointmentDetails.shootPreferences.shootStyleCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, shootStyleCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Professional" />
+                    </label>
+                    <label className="text-sm text-gray-700">Pose comfort
+                      <input value={psBookForm.influencerAppointmentDetails.shootPreferences.poseComfortLevel} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, poseComfortLevel: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Confident" />
+                    </label>
+                    <label className="text-sm text-gray-700">Boldness
+                      <input value={psBookForm.influencerAppointmentDetails.shootPreferences.boldnessLevel} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, boldnessLevel: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Normal" />
+                    </label>
+                    <label className="text-sm text-gray-700 md:col-span-2">Shoot type (comma separated)
+                      <input value={psBookForm.influencerAppointmentDetails.shootPreferences.shootTypeCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, shootTypeCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Indoor" />
+                    </label>
+                    <div className="flex items-center gap-4 md:col-span-3">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.shootPreferences.sleevelessAllowed} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, sleevelessAllowed: e.target.checked } } }))} />
+                        Sleeveless allowed
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.shootPreferences.cameraFacingComfort} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, cameraFacingComfort: e.target.checked } } }))} />
+                        Camera facing comfort
+                      </label>
+                    </div>
+                  </div>
+
+                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Permissions</h3>
+                  <div className="mt-3 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700">Makeup preference
+                      <input value={psBookForm.influencerAppointmentDetails.stylingPermissions.makeupPreference} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, stylingPermissions: { ...p.influencerAppointmentDetails.stylingPermissions, makeupPreference: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Natural" />
+                    </label>
+                    <div className="flex items-center gap-4 md:col-span-2">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.stylingPermissions.accessoriesAllowed} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, stylingPermissions: { ...p.influencerAppointmentDetails.stylingPermissions, accessoriesAllowed: e.target.checked } } }))} />
+                        Accessories allowed
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.editingAndUsage.photoshopBrandingAllowed} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, editingAndUsage: { ...p.influencerAppointmentDetails.editingAndUsage, photoshopBrandingAllowed: e.target.checked } } }))} />
+                        Photoshop/branding allowed
+                      </label>
+                    </div>
+                    <label className="text-sm text-gray-700 md:col-span-3">Usage permission (comma separated)
+                      <input value={psBookForm.influencerAppointmentDetails.editingAndUsage.usagePermissionCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, editingAndUsage: { ...p.influencerAppointmentDetails.editingAndUsage, usagePermissionCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Website, Social Media" />
+                    </label>
+                  </div>
+
+                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Consent</h3>
+                  <div className="mt-3 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700">Date
+                      <input type="date" value={psBookForm.influencerAppointmentDetails.consent.date} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, consent: { ...p.influencerAppointmentDetails.consent, date: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
+                    </label>
+                    <div className="flex items-center gap-4 md:col-span-2">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.consent.publicDisplayConsent} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, consent: { ...p.influencerAppointmentDetails.consent, publicDisplayConsent: e.target.checked } } }))} />
+                        Public display consent
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.consent.termsAccepted} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, consent: { ...p.influencerAppointmentDetails.consent, termsAccepted: e.target.checked } } }))} />
+                        Terms accepted
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-end">
+                    <button type="button" onClick={bookLatestPhotoshoot} disabled={psBooking} className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-900 disabled:opacity-50">
+                      {psBooking ? 'Submitting…' : 'Submit Request'}
+                    </button>
+                  </div>
+                </Panel>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'referral' && (
+            <div className="mt-6 grid lg:grid-cols-3 gap-6">
+              <Panel gradient>
+                <h2 className="font-semibold">Referral</h2>
+                <div className="mt-2 text-xs text-gray-600">Invite friends and earn rewards.</div>
+                {refError && <div className="mt-3 text-xs text-red-600">{refError}</div>}
+                {refMessage && <div className="mt-3 text-xs text-emerald-700">{refMessage}</div>}
+                <div className="mt-4 flex items-center gap-2">
+                  <button type="button" onClick={() => { loadReferralSummary(); loadReferralLedger({ limit: refLedger?.limit || 20, offset: refLedger?.offset || 0 }); }} disabled={refSummaryLoading || refLedgerLoading} className="px-3 py-2 rounded-md text-sm bg-gray-100 disabled:opacity-50">
+                    {(refSummaryLoading || refLedgerLoading) ? 'Loading…' : 'Refresh'}
+                  </button>
+                </div>
+              </Panel>
+
+              <div className="lg:col-span-2 space-y-6">
+                <Panel>
+                  <h2 className="font-semibold">My Referral Code</h2>
+                  {refSummaryLoading && <div className="mt-3 text-xs text-gray-600">Loading…</div>}
+                  {!refSummaryLoading && (
+                    <>
+                      <div className="mt-3 grid md:grid-cols-3 gap-4">
+                        <div className="rounded-xl bg-gray-50 ring-1 ring-gray-200 p-4">
+                          <div className="text-xs text-gray-600">Referral code</div>
+                          <div className="mt-1 text-lg font-semibold text-gray-900">{refSummary?.referralCode || '—'}</div>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 ring-1 ring-gray-200 p-4">
+                          <div className="text-xs text-gray-600">Total referred</div>
+                          <div className="mt-1 text-lg font-semibold text-gray-900">{String(refSummary?.stats?.totalReferred ?? 0)}</div>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 ring-1 ring-gray-200 p-4">
+                          <div className="text-xs text-gray-600">Total earned</div>
+                          <div className="mt-1 text-lg font-semibold text-gray-900">{String(refSummary?.stats?.totalEarned ?? 0)}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 text-xs text-gray-600">Share URL: <span className="text-gray-800">{refInviteResult?.shareUrl || (refSummary?.referralCode ? `https://influ.kaburlumedia.com/referral?code=${encodeURIComponent(refSummary.referralCode)}` : '—')}</span></div>
+                    </>
+                  )}
+                </Panel>
+
+                <Panel>
+                  <h2 className="font-semibold">Invite Referral</h2>
+                  <div className="mt-2 text-xs text-gray-600">Give mobile number and name.</div>
+                  <div className="mt-4 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700">Mobile number
+                      <input
+                        value={refInviteForm.phone}
+                        onChange={(e)=>setRefInviteForm((p)=>({ ...p, phone: e.target.value }))}
+                        className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3"
+                        placeholder="9118191991"
+                        inputMode="numeric"
+                      />
+                    </label>
+                    <label className="text-sm text-gray-700 md:col-span-2">Receiver name
+                      <input
+                        value={refInviteForm.receiverName}
+                        onChange={(e)=>setRefInviteForm((p)=>({ ...p, receiverName: e.target.value }))}
+                        className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3"
+                        placeholder="Nagendra"
+                      />
+                    </label>
+                  </div>
+                  <div className="mt-4 flex items-center justify-end">
+                    <button type="button" onClick={inviteReferral} disabled={refInviteLoading} className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-900 disabled:opacity-50">
+                      {refInviteLoading ? 'Sending…' : 'Send Invite'}
+                    </button>
+                  </div>
+                  {refInviteResult?.shareUrl && (
+                    <div className="mt-3 text-xs text-gray-700">Share URL: <span className="text-gray-900">{refInviteResult.shareUrl}</span></div>
+                  )}
+                </Panel>
+
+                <Panel>
+                  <h2 className="font-semibold">Apply Referral Code</h2>
+                  <div className="mt-2 text-xs text-gray-600">If you were referred by someone, apply their code here.</div>
+                  <div className="mt-4 grid md:grid-cols-3 gap-4">
+                    <label className="text-sm text-gray-700 md:col-span-2">Referral code
+                      <input
+                        value={refApplyCode}
+                        onChange={(e)=>setRefApplyCode(e.target.value)}
+                        className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3"
+                        placeholder="AB12CD34"
+                      />
+                    </label>
+                    <div className="flex items-end">
+                      <button type="button" onClick={applyReferral} disabled={refApplyLoading} className="w-full px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-900 disabled:opacity-50">
+                        {refApplyLoading ? 'Applying…' : 'Apply'}
+                      </button>
+                    </div>
+                  </div>
+                </Panel>
+
+                <Panel>
+                  <h2 className="font-semibold">My Referral Ledger</h2>
+                  <div className="mt-4 flex items-center gap-2">
+                    <button type="button" onClick={() => loadReferralLedger({ limit: refLedger?.limit || 20, offset: Math.max(0, (refLedger?.offset || 0) - (refLedger?.limit || 20)) })} disabled={refLedgerLoading || (refLedger?.offset || 0) <= 0} className="px-3 py-2 rounded-md text-sm bg-gray-100 disabled:opacity-50">Prev</button>
+                    <button type="button" onClick={() => loadReferralLedger({ limit: refLedger?.limit || 20, offset: (refLedger?.offset || 0) + (refLedger?.limit || 20) })} disabled={refLedgerLoading || ((refLedger?.offset || 0) + (refLedger?.limit || 20)) >= (refLedger?.total || 0)} className="px-3 py-2 rounded-md text-sm bg-gray-100 disabled:opacity-50">Next</button>
+                    <div className="text-xs text-gray-600">Showing {(refLedger?.items || []).length} of {refLedger?.total || 0}.</div>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {refLedgerLoading && <div className="text-xs text-gray-600">Loading…</div>}
+                    {!refLedgerLoading && (refLedger?.items || []).length === 0 && <div className="text-xs text-gray-600">No ledger entries yet.</div>}
+                    {!refLedgerLoading && (refLedger?.items || []).map((it, idx) => (
+                      <div key={it.ulid || it.id || idx} className="rounded-xl bg-gray-50 ring-1 ring-gray-200 px-4 py-3">
+                        <div className="text-sm font-medium text-gray-900">{it.type || it.kind || it.status || 'Entry'}</div>
+                        <div className="mt-1 text-xs text-gray-600">{(it.createdAt || it.created_at || '').toString() || ''}</div>
+                        {it.amount != null && <div className="mt-1 text-xs text-gray-700">Amount: {String(it.amount)}</div>}
+                        {it.note && <div className="mt-1 text-xs text-gray-700">{String(it.note)}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+              </div>
             </div>
           )}
 

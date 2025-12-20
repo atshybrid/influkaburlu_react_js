@@ -54,11 +54,16 @@ export const apiClient = {
       if (ct.includes('application/json')) {
         const j = await res.json().catch(() => null);
         const msg = j?.message || j?.error || `Request failed: ${res.status}`;
-        throw new Error(msg);
+        const err = new Error(msg);
+        err.status = res.status;
+        err.data = j;
+        throw err;
       } else {
         // Avoid throwing raw HTML into the UI; use concise status text
         const statusText = res.statusText || 'Server Error';
-        throw new Error(`${statusText} (${res.status})`);
+        const err = new Error(`${statusText} (${res.status})`);
+        err.status = res.status;
+        throw err;
       }
     }
 
