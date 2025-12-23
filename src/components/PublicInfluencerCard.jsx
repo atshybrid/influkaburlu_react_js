@@ -25,15 +25,40 @@ export default function PublicInfluencerCard({
   autoplay = true,
   muted = true,
   showFooterNote = true,
+  hideIfNoVideo = false,
+  isActive = false,
+  onActivate,
+  onDeactivate,
+  activateOnHover = true,
+  activateOnFocus = true,
 }) {
-  const videos = Array.isArray(influencer?.videos) ? influencer.videos : [];
+  const videos = useMemo(() => {
+    const list = Array.isArray(influencer?.videos) ? influencer.videos : [];
+    return list.filter((v) => (v?.playbackUrl || '').toString().trim());
+  }, [influencer?.videos]);
   const [videoIndex, setVideoIndex] = useState(0);
 
-  const currentVideo = videos[videoIndex] || influencer?.bestVideo || null;
+  const bestVideo = useMemo(() => {
+    const raw = influencer?.bestVideo;
+    const playbackUrl = (raw?.playbackUrl || '').toString().trim();
+    return playbackUrl ? raw : null;
+  }, [influencer?.bestVideo]);
+
+  const currentVideo = videos[videoIndex] || bestVideo || null;
+  const hasPlayableVideo = Boolean((currentVideo?.playbackUrl || '').toString().trim());
+  const effectiveMuted = isActive ? false : muted;
+
   const videoSrc = useMemo(() => {
-    const raw = currentVideo?.playbackUrl || '';
-    return buildPlaybackUrl(raw, { autoplay, muted });
-  }, [currentVideo?.playbackUrl, autoplay, muted]);
+    const raw = (currentVideo?.playbackUrl || '').toString().trim();
+    return buildPlaybackUrl(raw, { autoplay, muted: effectiveMuted });
+  }, [currentVideo?.playbackUrl, autoplay, effectiveMuted]);
+
+  const [isEmbedLoaded, setIsEmbedLoaded] = useState(false);
+
+  useEffect(() => {
+    // Reset loading state when a new video URL is shown.
+    setIsEmbedLoaded(false);
+  }, [videoSrc]);
 
   useEffect(() => {
     setVideoIndex(0);
@@ -57,6 +82,8 @@ export default function PublicInfluencerCard({
   const avatarSrc = profilePicUrl || '/assets/brand-logo.png';
   const verificationStatus = influencer?.verificationStatus;
   const badge = influencer?.badgeName || (Array.isArray(influencer?.badges) ? influencer.badges[0] : '');
+
+  if (hideIfNoVideo && !hasPlayableVideo) return null;
 
   return (
     <div className="rounded-2xl overflow-hidden ring-1 ring-gray-200 bg-white">
@@ -113,15 +140,50 @@ export default function PublicInfluencerCard({
       <div className="bg-gray-50">
         <div className="w-full" style={{ aspectRatio: '9/16' }}>
           {videoSrc ? (
-            <iframe
-              key={videoSrc}
-              src={videoSrc}
-              title={`${nameText}-video-${currentVideo?.guid || videoIndex}`}
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
-              className="w-full h-full"
-            />
+            <div
+              className="relative w-full h-full"
+              onPointerEnter={(e) => {
+                if (!activateOnHover) return;
+                if (isActive) return;
+                if (e?.pointerType !== 'mouse') return;
+                if (typeof onActivate === 'function') onActivate();
+              }}
+              onPointerLeave={(e) => {
+                if (!activateOnHover) return;
+                if (!isActive) return;
+                if (e?.pointerType !== 'mouse') return;
+                if (typeof onDeactivate === 'function') onDeactivate();
+              }}
+              onFocusCapture={() => {
+                if (!activateOnFocus) return;
+                if (isActive) return;
+                if (typeof onActivate === 'function') onActivate();
+              }}
+            >
+              {!isEmbedLoaded && (
+                <div className="absolute inset-0 bg-gray-200 animate-pulse pointer-events-none" aria-hidden="true" />
+              )}
+              <iframe
+                key={videoSrc}
+                src={videoSrc}
+                title={`${nameText}-video-${currentVideo?.guid || videoIndex}`}
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+                className="w-full h-full"
+                onLoad={() => setIsEmbedLoaded(true)}
+                onError={() => setIsEmbedLoaded(true)}
+              />
+
+              {!isActive && typeof onActivate === 'function' && (
+                <button
+                  type="button"
+                  aria-label="Activate video"
+                  className="absolute inset-0"
+                  onClick={onActivate}
+                />
+              )}
+            </div>
           ) : (
             <div className="w-full h-full grid place-items-center text-sm text-gray-600">No videos</div>
           )}

@@ -14,6 +14,8 @@ import PublicInfluencerProfile from './pages/PublicInfluencerProfile';
 import InfluencersList from './pages/InfluencersList';
 import DashboardInfluencer from './pages/DashboardInfluencer';
 import DashboardAdvertiser from './pages/DashboardAdvertiser';
+import PhotoshootRequestNew from './pages/PhotoshootRequestNew';
+import PhotoshootRequestDetails from './pages/PhotoshootRequestDetails';
 import Referral from './pages/Referral';
 import Admin from './pages/Admin';
 import SuperAdmin from './pages/SuperAdmin';
@@ -56,6 +58,8 @@ function App(){
 						<Route path="/dashboard/advertiser" element={<RequireAuth role="advertiser"><DashboardAdvertiser/></RequireAuth>} />
 						<Route path="/dashboard-influencer" element={<RequireAuth role="influencer"><DashboardInfluencer/></RequireAuth>} />
 						<Route path="/dashboard-advertiser" element={<RequireAuth role="advertiser"><DashboardAdvertiser/></RequireAuth>} />
+						<Route path="/photoshoot/new" element={<RequireAuth role="influencer" title="New Photoshoot Request"><PhotoshootRequestNew/></RequireAuth>} />
+						<Route path="/photoshoot/requests/:ulid" element={<RequireAuth role="influencer" title="Photoshoot Request"><PhotoshootRequestDetails/></RequireAuth>} />
 						<Route path="/admin" element={<Admin/>} />
 						<Route path="/super-admin" element={<RequireAuth role="superadmin" title="Super Admin"><SuperAdmin/></RequireAuth>} />
 					</Routes>

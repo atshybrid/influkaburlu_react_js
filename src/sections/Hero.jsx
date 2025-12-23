@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 export default function Hero() {
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('auth.token');
   const brandCtaTo = isAuthed ? '/ads' : '/get-started?role=brand';
   const creatorCtaTo = isAuthed ? '/profile-builder' : '/get-started?role=influencer';
+  const [isHeroVideoLoaded, setIsHeroVideoLoaded] = useState(false);
 
   return (
     <section className="relative overflow-hidden">
@@ -70,9 +72,23 @@ export default function Hero() {
               {/* wide video card */}
               <div className="absolute right-0 top-0 h-36 w-56 sm:h-40 sm:w-64 lg:top-2 lg:h-44 lg:w-80 rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 overflow-hidden animate-float z-20" style={{animationDelay:'0.4s'}}>
                 {/* Drop a short hero video here later */}
-                <video className="h-full w-full object-cover" autoPlay muted loop playsInline poster="/assets/brand-logo.png">
+                <div className="relative h-full w-full">
+                  {!isHeroVideoLoaded && (
+                    <div className="absolute inset-0 bg-gray-200 animate-pulse" aria-hidden="true" />
+                  )}
+                  <video
+                    className="h-full w-full object-cover"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    poster="/assets/brand-logo.png"
+                    onLoadedData={() => setIsHeroVideoLoaded(true)}
+                    onError={() => setIsHeroVideoLoaded(true)}
+                  >
                   <source src="/assets/hero-video.mp4" type="video/mp4" />
-                </video>
+                  </video>
+                </div>
               </div>
               {/* stacked story (asset with fallback, clickable to profile) */}
               <Link to="/profile-builder" className="absolute right-0 bottom-0 h-48 w-32 sm:right-4 sm:bottom-0 sm:h-56 sm:w-36 lg:right-6 lg:bottom-2 lg:h-64 lg:w-40 rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 overflow-hidden animate-float z-30" style={{animationDelay:'0.6s'}}>

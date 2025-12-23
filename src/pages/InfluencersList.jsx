@@ -13,6 +13,7 @@ export default function InfluencersList() {
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [error, setError] = React.useState('');
   const [offset, setOffset] = React.useState(0);
+  const [activeId, setActiveId] = React.useState(null);
   const limit = 30;
 
   const baseUrl = (import.meta.env.VITE_FRONTEND_URL || '').toString().replace(/\/+$/, '');
@@ -133,7 +134,10 @@ export default function InfluencersList() {
             influencer={inf}
             rotateVideos={false}
             autoplay={false}
-            muted={false}
+            muted={activeId === inf.idUlid ? false : true}
+            isActive={activeId === inf.idUlid}
+            onActivate={() => setActiveId(inf.idUlid)}
+            onDeactivate={() => setActiveId((prev) => (prev === inf.idUlid ? null : prev))}
             showFooterNote={false}
           />
         ))}

@@ -8,6 +8,9 @@ export default function Influencers() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
   const [limit, setLimit] = React.useState(6);
+  const [activeId, setActiveId] = React.useState(null);
+
+  const skeletonCount = React.useMemo(() => Math.max(1, Number(limit) || 4), [limit]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
@@ -63,7 +66,16 @@ export default function Influencers() {
     return () => { mounted = false; };
   }, []);
 
-  const visibleItems = React.useMemo(() => items.slice(0, limit), [items, limit]);
+  const itemsWithVideo = React.useMemo(() => {
+    return (Array.isArray(items) ? items : []).filter((inf) => {
+      const best = (inf?.bestVideo?.playbackUrl || '').toString().trim();
+      if (best) return true;
+      const vids = Array.isArray(inf?.videos) ? inf.videos : [];
+      return vids.some((v) => (v?.playbackUrl || '').toString().trim());
+    });
+  }, [items]);
+
+  const visibleItems = React.useMemo(() => itemsWithVideo.slice(0, limit), [itemsWithVideo, limit]);
 
   return (
     <section id="influencers" className="max-w-6xl mx-auto px-6 py-16">
@@ -82,7 +94,7 @@ export default function Influencers() {
         </Link>
       </div>
       <div className="mt-4 text-sm text-gray-600">
-        {loading ? 'Loading creators…' : `Showing ${Math.min(visibleItems.length, items.length)} of ${items.length} creators`}
+        {loading ? 'Loading creators…' : `Showing ${Math.min(visibleItems.length, itemsWithVideo.length)} of ${itemsWithVideo.length} creators`}
       </div>
 
       {error && !loading && (
@@ -90,8 +102,39 @@ export default function Influencers() {
       )}
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {loading && Array.from({ length: skeletonCount }).map((_, idx) => (
+          <div key={`inf-skel-${idx}`} className="rounded-2xl overflow-hidden ring-1 ring-gray-200 bg-white">
+            <div className="p-4 flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-full overflow-hidden ring-1 ring-gray-200 bg-gray-100 shrink-0 animate-pulse" />
+                <div className="min-w-0">
+                  <div className="h-4 w-32 bg-gray-200 rounded-md animate-pulse" />
+                  <div className="mt-2 h-3 w-24 bg-gray-200 rounded-md animate-pulse" />
+                </div>
+              </div>
+              <div className="h-5 w-20 bg-gray-200 rounded-md animate-pulse" />
+            </div>
+            <div className="bg-gray-50">
+              <div className="w-full" style={{ aspectRatio: '9/16' }}>
+                <div className="h-full w-full bg-gray-200 animate-pulse" aria-hidden="true" />
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="h-3 w-40 bg-gray-200 rounded-md animate-pulse" />
+            </div>
+          </div>
+        ))}
+
         {!loading && visibleItems.map((inf) => (
-          <PublicInfluencerCard key={inf.idUlid} influencer={inf} />
+          <PublicInfluencerCard
+            key={inf.idUlid}
+            influencer={inf}
+            hideIfNoVideo
+            isActive={activeId === inf.idUlid}
+            muted={activeId === inf.idUlid ? false : true}
+            onActivate={() => setActiveId(inf.idUlid)}
+            onDeactivate={() => setActiveId((prev) => (prev === inf.idUlid ? null : prev))}
+          />
         ))}
       </div>
     </section>

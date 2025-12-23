@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AvatarImage from '../components/AvatarImage';
 import imageCompression from 'browser-image-compression';
 import AvatarModal from '../components/AvatarModal';
@@ -7,7 +8,110 @@ import { apiClient } from '../utils/apiClient';
 import { logger } from '../utils/logger';
 import { useCurrency, formatPrice } from '../utils/useCurrency';
 
+function PlatformIcon({ platform, className = 'h-4 w-4 text-gray-500' }){
+  switch (platform) {
+    case 'instagram':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" strokeWidth="1.8" />
+          <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+          <circle cx="17" cy="7" r="1" fill="currentColor" />
+        </svg>
+      );
+    case 'youtube':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <rect x="4" y="7" width="16" height="10" rx="3" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M11 10.2v3.6l3.4-1.8L11 10.2z" fill="currentColor" />
+        </svg>
+      );
+    case 'tiktok':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <path d="M13 4v9.1a3.9 3.9 0 1 1-3-3.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M13 4c.7 3.2 3.1 4.6 5 4.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'facebook':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <path d="M12 12a4.5 4.5 0 1 0-4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M12 12a4.5 4.5 0 1 1 4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'x':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <path d="M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'snapchat':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <path d="M12 6c2.3 0 4 1.7 4 4.1v1.3c0 .9.7 1.5 1.6 1.9l.7.3c-.3 1.2-1.5 1.8-2.7 2.2-.3 1.4-1.8 2.2-3.6 2.2s-3.3-.8-3.6-2.2c-1.2-.4-2.4-1-2.7-2.2l.7-.3c.9-.4 1.6-1 1.6-1.9v-1.3C8 7.7 9.7 6 12 6z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'linkedin':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <rect x="5" y="9" width="3" height="10" rx="1" fill="currentColor" />
+          <circle cx="6.5" cy="6.5" r="1.2" fill="currentColor" />
+          <path d="M11 19v-6.2c0-1.9 1.3-3.3 3.2-3.3 1.9 0 3.2 1.4 3.2 3.3V19" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'pinterest':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <path d="M12 20c4.4 0 8-3.1 8-7.4C20 8.3 16.4 5 12 5S4 8.3 4 12.6c0 3 1.7 5.6 4.2 6.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M10.8 20l1.4-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'threads':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M9.2 14.2c.7 1.5 2.1 2.4 3.8 2.4 1.8 0 3.3-1 3.3-2.7 0-2-1.8-2.7-4.1-2.7H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'telegram':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <path d="M20 6L4.8 11.9c-.9.4-.8 1.7.2 1.9l3.7.8 1.6 4.7c.3.9 1.5 1.1 2.1.3l2.3-3 4.2 3c.8.6 2 .2 2.2-.8L21 6.8c.2-1-.9-1.7-1.8-0.8z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'website':
+    case 'websiteMonthlyVisitors':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M4 12h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M12 4c2.5 2.6 2.5 12.8 0 16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case 'engagementRate':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden="true">
+          <path d="M5 16l4-5 3 3 6-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5 19h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function PlatformLabel({ platform, label }){
+  return (
+    <span className="inline-flex items-center gap-2">
+      <PlatformIcon platform={platform} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
 export default function DashboardInfluencer(){
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [me, setMe] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -100,57 +204,8 @@ export default function DashboardInfluencer(){
   const [psLimit, setPsLimit] = useState(20);
   const [psOffset, setPsOffset] = useState(0);
   const [psItems, setPsItems] = useState([]);
-  const [psBooking, setPsBooking] = useState(false);
-  const [psBookError, setPsBookError] = useState('');
-  const [psBookMessage, setPsBookMessage] = useState('');
-  const [psBookForm, setPsBookForm] = useState({
-    requestedTimezone: 'Asia/Kolkata',
-    requestedStartAtLocal: '',
-    requestedEndAtLocal: '',
-    influencerAppointmentDetails: {
-      personal: {
-        fullName: '',
-        city: '',
-        gender: '',
-        bodyType: '',
-        skinTone: '',
-      },
-      bodyMeasurements: {
-        heightCm: '',
-        shoeSize: '',
-      },
-      dressDetails: {
-        topSize: '',
-        bottomSize: '',
-        dressSize: '',
-        preferredFit: '',
-        preferredDressingStyleCsv: '',
-        westernWearTypeCsv: '',
-        preferredOutfitColorsCsv: '',
-      },
-      shootPreferences: {
-        shootStyleCsv: '',
-        poseComfortLevel: '',
-        boldnessLevel: '',
-        sleevelessAllowed: true,
-        cameraFacingComfort: true,
-        shootTypeCsv: '',
-      },
-      stylingPermissions: {
-        makeupPreference: '',
-        accessoriesAllowed: true,
-      },
-      editingAndUsage: {
-        usagePermissionCsv: '',
-        photoshopBrandingAllowed: true,
-      },
-      consent: {
-        publicDisplayConsent: true,
-        termsAccepted: true,
-        date: new Date().toISOString().slice(0, 10),
-      },
-    },
-  });
+
+  const DEFAULT_PHOTOSHOOT_TZ = 'Asia/Kolkata';
 
   // Referral
   const [refSummaryLoading, setRefSummaryLoading] = useState(false);
@@ -211,6 +266,13 @@ export default function DashboardInfluencer(){
   };
 
   useEffect(() => {
+    // Support deep-linking into a specific tab, e.g. /dashboard-influencer?tab=photoshoot
+    try {
+      const qs = new URLSearchParams(window.location.search || '');
+      const t = (qs.get('tab') || '').toString().trim().toLowerCase();
+      if (t) setActiveTab(t);
+    } catch {}
+
     // Redirect unauthenticated users to Login
     if (!hasToken) {
       setLoading(false);
@@ -296,98 +358,70 @@ export default function DashboardInfluencer(){
     }
   }
 
-  async function bookLatestPhotoshoot() {
-    setPsBooking(true);
-    setPsBookError('');
-    setPsBookMessage('');
+  function formatPhotoshootDateTime(iso, timeZone) {
     try {
-      const toIsoOrNull = (local) => {
-        const t = (local || '').toString().trim();
-        if (!t) return null;
-        const d = new Date(t);
-        if (Number.isNaN(d.getTime())) return null;
-        return d.toISOString();
-      };
-      const csvToArr = (v) => {
-        const t = (v || '').toString().trim();
-        if (!t) return [];
-        return t.split(',').map((x) => x.trim()).filter(Boolean);
-      };
-      const toNumOrUndef = (v) => {
-        const n = Number((v || '').toString().trim());
-        if (!Number.isFinite(n)) return undefined;
-        return n;
-      };
-
-      const requestedStartAt = toIsoOrNull(psBookForm.requestedStartAtLocal);
-      const requestedEndAt = toIsoOrNull(psBookForm.requestedEndAtLocal);
-      if (!requestedStartAt || !requestedEndAt) {
-        throw new Error('Please select requested start and end time.');
-      }
-
-      const d = psBookForm.influencerAppointmentDetails;
-      const payload = {
-        requestedTimezone: (psBookForm.requestedTimezone || 'Asia/Kolkata').toString(),
-        requestedStartAt,
-        requestedEndAt,
-        details: {
-          influencerAppointmentDetails: {
-            personal: {
-              fullName: (d.personal.fullName || '').toString(),
-              city: (d.personal.city || '').toString(),
-              gender: (d.personal.gender || '').toString(),
-              bodyType: (d.personal.bodyType || '').toString(),
-              skinTone: (d.personal.skinTone || '').toString(),
-            },
-            bodyMeasurements: {
-              heightCm: toNumOrUndef(d.bodyMeasurements.heightCm),
-              shoeSize: toNumOrUndef(d.bodyMeasurements.shoeSize),
-            },
-            dressDetails: {
-              topSize: (d.dressDetails.topSize || '').toString(),
-              bottomSize: (d.dressDetails.bottomSize || '').toString(),
-              dressSize: (d.dressDetails.dressSize || '').toString(),
-              preferredFit: (d.dressDetails.preferredFit || '').toString(),
-              preferredDressingStyle: csvToArr(d.dressDetails.preferredDressingStyleCsv),
-              westernWearType: csvToArr(d.dressDetails.westernWearTypeCsv),
-              preferredOutfitColors: csvToArr(d.dressDetails.preferredOutfitColorsCsv),
-            },
-            shootPreferences: {
-              shootStyle: csvToArr(d.shootPreferences.shootStyleCsv),
-              poseComfortLevel: (d.shootPreferences.poseComfortLevel || '').toString(),
-              boldnessLevel: (d.shootPreferences.boldnessLevel || '').toString(),
-              sleevelessAllowed: !!d.shootPreferences.sleevelessAllowed,
-              cameraFacingComfort: !!d.shootPreferences.cameraFacingComfort,
-              shootType: csvToArr(d.shootPreferences.shootTypeCsv),
-            },
-            stylingPermissions: {
-              makeupPreference: (d.stylingPermissions.makeupPreference || '').toString(),
-              accessoriesAllowed: !!d.stylingPermissions.accessoriesAllowed,
-            },
-            editingAndUsage: {
-              usagePermission: csvToArr(d.editingAndUsage.usagePermissionCsv),
-              photoshopBrandingAllowed: !!d.editingAndUsage.photoshopBrandingAllowed,
-            },
-            consent: {
-              publicDisplayConsent: !!d.consent.publicDisplayConsent,
-              termsAccepted: !!d.consent.termsAccepted,
-              date: (d.consent.date || '').toString(),
-            },
-          },
-        },
-      };
-
-      await apiClient.request('/influencers/me/photoshoots/requests/book-latest', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      setPsBookMessage('Photoshoot request submitted.');
-      await loadPhotoshootRequests({ limit: psLimit, offset: 0 });
-    } catch (e) {
-      setPsBookError(e?.message || 'Failed to book photoshoot.');
-    } finally {
-      setPsBooking(false);
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return String(iso);
+      return new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        ...(timeZone ? { timeZone } : {}),
+      }).format(d);
+    } catch {
+      return String(iso || '');
     }
+  }
+
+  function formatPhotoshootRange(startIso, endIso, timeZone) {
+    const a = formatPhotoshootDateTime(startIso, timeZone);
+    const b = formatPhotoshootDateTime(endIso, timeZone);
+    if (a && b) return `${a} → ${b}`;
+    return a || b || '';
+  }
+
+  function getPhotoshootLocationLabel(loc) {
+    const city = (loc?.city || '').toString().trim();
+    const area = (loc?.area || '').toString().trim();
+    const address = (loc?.address || '').toString().trim();
+    if (city && area) return `${area}, ${city}`;
+    if (city && address) return `${address}, ${city}`;
+    if (city) return city;
+    return area || address || '';
+  }
+
+  function getPhotoshootStatusUi(statusRaw) {
+    const status = (statusRaw || '').toString().toLowerCase();
+    if (status === 'scheduled') {
+      return {
+        badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+        border: 'border-l-4 border-emerald-400',
+        title: 'Scheduled',
+      };
+    }
+    if (status === 'pending') {
+      return {
+        badge: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+        border: 'border-l-4 border-amber-400',
+        title: 'Pending',
+      };
+    }
+    if (status === 'rejected') {
+      return {
+        badge: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+        border: 'border-l-4 border-red-400',
+        title: 'Rejected',
+      };
+    }
+    return {
+      badge: 'bg-gray-100 text-gray-700 ring-1 ring-gray-200',
+      border: 'border-l-4 border-gray-200',
+      title: statusRaw || '—',
+    };
   }
 
   function normalizePhoneDigits(value) {
@@ -815,6 +849,9 @@ export default function DashboardInfluencer(){
     if (activeTab === 'payments' && payItems.length === 0 && !payLoading) {
       loadPayments();
     }
+    if (activeTab === 'photoshoot' && psItems.length === 0 && !psLoading) {
+      loadPhotoshootRequests({ limit: psLimit, offset: 0 });
+    }
   }, [activeTab]);
 
   const metrics = data?.metrics;
@@ -1214,7 +1251,7 @@ export default function DashboardInfluencer(){
                       ['telegram','Telegram'],
                     ].map(([key, label]) => (
                       <label key={key} className="text-sm text-gray-700">
-                        {label}
+                        <PlatformLabel platform={key} label={label} />
                         <input
                           type="number"
                           min="0"
@@ -1229,7 +1266,7 @@ export default function DashboardInfluencer(){
                     ))}
 
                     <label className="text-sm text-gray-700 md:col-span-2">
-                      Website monthly visitors
+                      <PlatformLabel platform="websiteMonthlyVisitors" label="Website monthly visitors" />
                       <input
                         type="number"
                         min="0"
@@ -1243,7 +1280,7 @@ export default function DashboardInfluencer(){
                     </label>
 
                     <label className="text-sm text-gray-700">
-                      Engagement rate (%)
+                      <PlatformLabel platform="engagementRate" label="Engagement rate (%)" />
                       <input
                         type="number"
                         min="0"
@@ -1273,7 +1310,7 @@ export default function DashboardInfluencer(){
                       ['website','Website','https://…'],
                     ].map(([key, label, ph]) => (
                       <label key={key} className="text-sm text-gray-700">
-                        {label}
+                        <PlatformLabel platform={key} label={label} />
                         <input
                           type="url"
                           value={reachForm.socialLinks[key]}
@@ -1302,10 +1339,13 @@ export default function DashboardInfluencer(){
                 <div className="mt-2 text-xs text-gray-600">Request a professional photoshoot slot.</div>
                 {psError && <div className="mt-3 text-xs text-red-600">{psError}</div>}
                 {psMessage && <div className="mt-3 text-xs text-emerald-700">{psMessage}</div>}
-                <div className="mt-4 flex items-center gap-2">
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
                   <button type="button" onClick={() => loadPhotoshootRequests({ limit: psLimit, offset: psOffset })} disabled={psLoading} className="px-3 py-2 rounded-md text-sm bg-gray-100 disabled:opacity-50">
                     {psLoading ? 'Loading…' : 'Refresh'}
                   </button>
+                    <button type="button" onClick={() => navigate('/photoshoot/new')} className="px-3 py-2 rounded-md text-sm font-medium text-white bg-gray-900">
+                      New Request
+                    </button>
                   <button type="button" onClick={() => loadPhotoshootRequests({ limit: psLimit, offset: Math.max(0, psOffset - psLimit) })} disabled={psLoading || psOffset <= 0} className="px-3 py-2 rounded-md text-sm bg-gray-100 disabled:opacity-50">
                     Prev
                   </button>
@@ -1322,164 +1362,59 @@ export default function DashboardInfluencer(){
                   <div className="mt-4 space-y-2">
                     {psLoading && <div className="text-xs text-gray-600">Loading…</div>}
                     {!psLoading && psItems.length === 0 && <div className="text-xs text-gray-600">No requests yet.</div>}
-                    {!psLoading && psItems.map((it) => (
-                      <div key={it.ulid} className="rounded-xl bg-gray-50 ring-1 ring-gray-200 px-4 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-sm font-medium text-gray-900">{it.status || '—'}</div>
-                          <div className="text-xs text-gray-600">{(it.createdAt || '').toString().slice(0, 10) || '—'}</div>
-                        </div>
-                        <div className="mt-1 text-xs text-gray-700">
-                          <div>ULID: <span className="text-gray-600">{it.ulid}</span></div>
-                          {it.scheduledStartAt && (
-                            <div>Scheduled: <span className="text-gray-600">{String(it.scheduledStartAt)}</span> → <span className="text-gray-600">{String(it.scheduledEndAt || '')}</span></div>
+                    {!psLoading && psItems.map((it) => {
+                      const ui = getPhotoshootStatusUi(it.status);
+                      const tz = it.scheduledTimezone || it.requestedTimezone || DEFAULT_PHOTOSHOOT_TZ;
+                      const statusLower = (it.status || '').toString().toLowerCase();
+                      const isScheduled = statusLower === 'scheduled';
+                      const highlight = statusLower === 'scheduled' || statusLower === 'pending';
+
+                      const scheduledRange = formatPhotoshootRange(it.scheduledStartAt, it.scheduledEndAt, tz);
+                      const requestedRange = formatPhotoshootRange(it.requestedStartAt, it.requestedEndAt, tz);
+                      const primaryRange = (isScheduled ? (scheduledRange || requestedRange) : (requestedRange || scheduledRange));
+
+                      const locLabel = getPhotoshootLocationLabel(it.location);
+
+                      return (
+                        <button
+                          key={it.ulid}
+                          type="button"
+                          onClick={() => navigate(`/photoshoot/requests/${encodeURIComponent(it.ulid)}`, { state: { item: it } })}
+                          className={`w-full text-left rounded-xl bg-white ring-1 ring-gray-200 px-4 py-4 ${ui.border} hover:bg-gray-50`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${ui.badge}`}>{ui.title}</span>
+                                <div className="text-xs text-gray-500 truncate">{it.ulid}</div>
+                              </div>
+
+                              {(highlight && (primaryRange || locLabel)) ? (
+                                <div className="mt-3">
+                                  {primaryRange && <div className="text-sm font-semibold text-gray-900">{primaryRange}</div>}
+                                  {locLabel && <div className="mt-1 text-sm text-gray-700">{locLabel}</div>}
+                                  {tz && <div className="mt-1 text-xs text-gray-500">Timezone: {tz}</div>}
+                                </div>
+                              ) : (
+                                <div className="mt-3 text-xs text-gray-600">No schedule details yet.</div>
+                              )}
+                            </div>
+
+                            <div className="text-right">
+                              <div className="text-xs text-gray-500">Created</div>
+                              <div className="text-xs text-gray-700">{(it.createdAt || '').toString().slice(0, 10) || '—'}</div>
+                            </div>
+                          </div>
+
+                          {(it.adminNotes || it.rejectReason) && (
+                            <div className="mt-3 text-xs">
+                              {it.rejectReason && <div className="text-red-700">Reject: {it.rejectReason}</div>}
+                              {it.adminNotes && <div className="text-gray-600">Admin: {it.adminNotes}</div>}
+                            </div>
                           )}
-                          {it.rejectReason && <div className="text-red-700">Reject: {it.rejectReason}</div>}
-                          {it.adminNotes && <div className="text-gray-600">Admin: {it.adminNotes}</div>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Panel>
-
-                <Panel>
-                  <h2 className="font-semibold">New Photoshoot Request</h2>
-                  <div className="mt-2 text-xs text-gray-600">Fill details and book the latest available slot.</div>
-                  {psBookError && <div className="mt-3 text-xs text-red-600">{psBookError}</div>}
-                  {psBookMessage && <div className="mt-3 text-xs text-emerald-700">{psBookMessage}</div>}
-
-                  <div className="mt-4 grid md:grid-cols-3 gap-4">
-                    <label className="text-sm text-gray-700 md:col-span-1">Timezone
-                      <input value={psBookForm.requestedTimezone} onChange={(e)=>setPsBookForm(p=>({ ...p, requestedTimezone: e.target.value }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Asia/Kolkata" />
-                    </label>
-                    <label className="text-sm text-gray-700 md:col-span-1">Requested start
-                      <input type="datetime-local" value={psBookForm.requestedStartAtLocal} onChange={(e)=>setPsBookForm(p=>({ ...p, requestedStartAtLocal: e.target.value }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
-                    </label>
-                    <label className="text-sm text-gray-700 md:col-span-1">Requested end
-                      <input type="datetime-local" value={psBookForm.requestedEndAtLocal} onChange={(e)=>setPsBookForm(p=>({ ...p, requestedEndAtLocal: e.target.value }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
-                    </label>
-                  </div>
-
-                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Personal</h3>
-                  <div className="mt-3 grid md:grid-cols-3 gap-4">
-                    <label className="text-sm text-gray-700">Full name
-                      <input value={psBookForm.influencerAppointmentDetails.personal.fullName} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, fullName: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
-                    </label>
-                    <label className="text-sm text-gray-700">City
-                      <input value={psBookForm.influencerAppointmentDetails.personal.city} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, city: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
-                    </label>
-                    <label className="text-sm text-gray-700">Gender
-                      <input value={psBookForm.influencerAppointmentDetails.personal.gender} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, gender: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="male/female/other" />
-                    </label>
-                    <label className="text-sm text-gray-700">Body type
-                      <input value={psBookForm.influencerAppointmentDetails.personal.bodyType} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, bodyType: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Athletic" />
-                    </label>
-                    <label className="text-sm text-gray-700">Skin tone
-                      <input value={psBookForm.influencerAppointmentDetails.personal.skinTone} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, personal: { ...p.influencerAppointmentDetails.personal, skinTone: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Medium" />
-                    </label>
-                  </div>
-
-                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Body measurements</h3>
-                  <div className="mt-3 grid md:grid-cols-3 gap-4">
-                    <label className="text-sm text-gray-700">Height (cm)
-                      <input type="number" min="0" value={psBookForm.influencerAppointmentDetails.bodyMeasurements.heightCm} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, bodyMeasurements: { ...p.influencerAppointmentDetails.bodyMeasurements, heightCm: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
-                    </label>
-                    <label className="text-sm text-gray-700">Shoe size
-                      <input type="number" min="0" value={psBookForm.influencerAppointmentDetails.bodyMeasurements.shoeSize} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, bodyMeasurements: { ...p.influencerAppointmentDetails.bodyMeasurements, shoeSize: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
-                    </label>
-                  </div>
-
-                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Dress details</h3>
-                  <div className="mt-3 grid md:grid-cols-3 gap-4">
-                    <label className="text-sm text-gray-700">Top size
-                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.topSize} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, topSize: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="M" />
-                    </label>
-                    <label className="text-sm text-gray-700">Bottom size
-                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.bottomSize} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, bottomSize: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="M" />
-                    </label>
-                    <label className="text-sm text-gray-700">Dress size
-                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.dressSize} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, dressSize: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="M" />
-                    </label>
-                    <label className="text-sm text-gray-700">Preferred fit
-                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.preferredFit} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, preferredFit: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Regular" />
-                    </label>
-                    <label className="text-sm text-gray-700 md:col-span-2">Preferred dressing style (comma separated)
-                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.preferredDressingStyleCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, preferredDressingStyleCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Western" />
-                    </label>
-                    <label className="text-sm text-gray-700 md:col-span-2">Western wear type (comma separated)
-                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.westernWearTypeCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, westernWearTypeCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Jeans & Top" />
-                    </label>
-                    <label className="text-sm text-gray-700 md:col-span-2">Preferred outfit colors (comma separated)
-                      <input value={psBookForm.influencerAppointmentDetails.dressDetails.preferredOutfitColorsCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, dressDetails: { ...p.influencerAppointmentDetails.dressDetails, preferredOutfitColorsCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Black" />
-                    </label>
-                  </div>
-
-                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Shoot preferences</h3>
-                  <div className="mt-3 grid md:grid-cols-3 gap-4">
-                    <label className="text-sm text-gray-700 md:col-span-2">Shoot style (comma separated)
-                      <input value={psBookForm.influencerAppointmentDetails.shootPreferences.shootStyleCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, shootStyleCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Professional" />
-                    </label>
-                    <label className="text-sm text-gray-700">Pose comfort
-                      <input value={psBookForm.influencerAppointmentDetails.shootPreferences.poseComfortLevel} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, poseComfortLevel: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Confident" />
-                    </label>
-                    <label className="text-sm text-gray-700">Boldness
-                      <input value={psBookForm.influencerAppointmentDetails.shootPreferences.boldnessLevel} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, boldnessLevel: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Normal" />
-                    </label>
-                    <label className="text-sm text-gray-700 md:col-span-2">Shoot type (comma separated)
-                      <input value={psBookForm.influencerAppointmentDetails.shootPreferences.shootTypeCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, shootTypeCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Indoor" />
-                    </label>
-                    <div className="flex items-center gap-4 md:col-span-3">
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.shootPreferences.sleevelessAllowed} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, sleevelessAllowed: e.target.checked } } }))} />
-                        Sleeveless allowed
-                      </label>
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.shootPreferences.cameraFacingComfort} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, shootPreferences: { ...p.influencerAppointmentDetails.shootPreferences, cameraFacingComfort: e.target.checked } } }))} />
-                        Camera facing comfort
-                      </label>
-                    </div>
-                  </div>
-
-                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Permissions</h3>
-                  <div className="mt-3 grid md:grid-cols-3 gap-4">
-                    <label className="text-sm text-gray-700">Makeup preference
-                      <input value={psBookForm.influencerAppointmentDetails.stylingPermissions.makeupPreference} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, stylingPermissions: { ...p.influencerAppointmentDetails.stylingPermissions, makeupPreference: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Natural" />
-                    </label>
-                    <div className="flex items-center gap-4 md:col-span-2">
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.stylingPermissions.accessoriesAllowed} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, stylingPermissions: { ...p.influencerAppointmentDetails.stylingPermissions, accessoriesAllowed: e.target.checked } } }))} />
-                        Accessories allowed
-                      </label>
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.editingAndUsage.photoshopBrandingAllowed} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, editingAndUsage: { ...p.influencerAppointmentDetails.editingAndUsage, photoshopBrandingAllowed: e.target.checked } } }))} />
-                        Photoshop/branding allowed
-                      </label>
-                    </div>
-                    <label className="text-sm text-gray-700 md:col-span-3">Usage permission (comma separated)
-                      <input value={psBookForm.influencerAppointmentDetails.editingAndUsage.usagePermissionCsv} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, editingAndUsage: { ...p.influencerAppointmentDetails.editingAndUsage, usagePermissionCsv: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" placeholder="Website, Social Media" />
-                    </label>
-                  </div>
-
-                  <h3 className="mt-6 text-sm font-semibold text-gray-900">Consent</h3>
-                  <div className="mt-3 grid md:grid-cols-3 gap-4">
-                    <label className="text-sm text-gray-700">Date
-                      <input type="date" value={psBookForm.influencerAppointmentDetails.consent.date} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, consent: { ...p.influencerAppointmentDetails.consent, date: e.target.value } } }))} className="mt-1 w-full rounded-md border-gray-300 focus:border-orange-500 focus:ring-orange-500 h-11 px-3" />
-                    </label>
-                    <div className="flex items-center gap-4 md:col-span-2">
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.consent.publicDisplayConsent} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, consent: { ...p.influencerAppointmentDetails.consent, publicDisplayConsent: e.target.checked } } }))} />
-                        Public display consent
-                      </label>
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input type="checkbox" checked={!!psBookForm.influencerAppointmentDetails.consent.termsAccepted} onChange={(e)=>setPsBookForm(p=>({ ...p, influencerAppointmentDetails: { ...p.influencerAppointmentDetails, consent: { ...p.influencerAppointmentDetails.consent, termsAccepted: e.target.checked } } }))} />
-                        Terms accepted
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex items-center justify-end">
-                    <button type="button" onClick={bookLatestPhotoshoot} disabled={psBooking} className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-900 disabled:opacity-50">
-                      {psBooking ? 'Submitting…' : 'Submit Request'}
-                    </button>
+                        </button>
+                      );
+                    })}
                   </div>
                 </Panel>
               </div>
