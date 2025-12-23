@@ -58,6 +58,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Local build logs
+vite-build.log
+build-*.log
+
 # Env files
 .env
 .env.*
